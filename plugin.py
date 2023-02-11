@@ -206,7 +206,7 @@ class BasePlugin:
 
     def onHeartbeat(self):
         Debug("onHeartbeat called")
-        Heartbeart()
+        Heartbeat()
 
 global _plugin
 _plugin = BasePlugin()
