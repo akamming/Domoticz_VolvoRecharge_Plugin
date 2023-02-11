@@ -238,6 +238,11 @@ def GetRechargeStatus():
                  int(CalculatedRange),
                  float(CalculatedRange))
 
+    #update Remaining ChargingTime Device
+    UpdateSensor(vin,ESTIMATEDCHARGINGTIME,"estimatedChargingTime",243,31,{'Custom':'1;min'},
+                 int(RechargeStatus["data"]["estimatedChargingTime"]["value"]),
+                 float(RechargeStatus["data"]["estimatedChargingTime"]["value"]))
+ 
     #Calculate Charging Connect Status value
     connstatus=RechargeStatus["data"]["chargingConnectionStatus"]["value"] 
     newValue=0
@@ -258,6 +263,29 @@ def GetRechargeStatus():
               "LevelOffHidden": "false",
               "SelectorStyle": "1"}
     UpdateSelectorSwitch(vin,CHARGINGCONNECTIONSTATUS,"chargingConnectionStatus",options,
+                 int(newValue),
+                 float(newValue))
+
+    #Calculate Charging system Status value
+    chargestatus=RechargeStatus["data"]["chargingSystemStatus"]["value"] 
+    newValue=0
+    if chargestatus=="CHARGING_SYSTEM_IDLE":
+        newValue=0
+    elif connstatus=="CHARGING_SYSTEM_CHARGING":
+        newValue=10
+    elif connstatus=="CHARGING_SYSTEM_FAULT":
+        newValue=20
+    elif connstatus=="CHARGING_SYSTEM_UNSPECIFIED":
+        newValue=30
+    else:
+        newValue=30
+
+    #update selector switch for Charging Connection Status
+    options = {"LevelActions": "|||",
+              "LevelNames": "Idle|Charging|Fault|Unspecified",
+              "LevelOffHidden": "false",
+              "SelectorStyle": "1"}
+    UpdateSelectorSwitch(vin,CHARGINGSYSTEMSTATUS,"chargingSystemStatus",options,
                  int(newValue),
                  float(newValue))
 
