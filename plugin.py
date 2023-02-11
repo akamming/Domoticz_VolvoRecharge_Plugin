@@ -63,6 +63,9 @@ debugging=False
 REMAININGRANGE=1
 FULLRANGE=2
 BATTERYCHARGELEVEL=3
+CHARGINGCONNECTIONSTATUS=4
+CHARGINGSYSTEMSTATUS=5
+ESTIMATEDCHARGINGTIME=6
 
 def Debug(text):
     if debugging:
@@ -227,6 +230,31 @@ def GetRechargeStatus():
     Devices[vin].Units[FULLRANGE].nValue     = CalculatedRange
     Devices[vin].Units[FULLRANGE].sValue  = str(CalculatedRange)
     Devices[vin].Units[FULLRANGE].Update(Log=True)
+
+    #update Charging Connect Status
+    if (not CHARGINGCONNECTIONSTATUS in Devices[vin].Units):
+        options = {"LevelActions": "|||",
+                  "LevelNames": "Disconnected|ACConnected|DCConnected|Unspecified",
+                  "LevelOffHidden": "false",
+                  "SelectorStyle": "1"}
+        Domoticz.Unit(Name="chargingConnectionStatus", Unit=CHARGINGCONNECTIONSTATUS, TypeName="Selector Switch", DeviceID=vin, Options=options).Create()
+    connstatus=RechargeStatus["data"]["chargingConnectionStatus"]["value"] 
+    newValue=0
+    if connstatus=="CONNECTION_STATUS_DISCONNECTED":
+        newValue=0
+    elif connstatus=="CONNECTION_STATUS_CONNECTED_AC":
+        newValue=10
+    elif connstatus=="CONNECTION_STATUS_CONNECTED_DC":
+        newValue=20
+    elif connstatus=="CONNECTION_STATUS_UNSPECIFIED":
+        newValue=30
+    else:
+        newValue=30
+
+    Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue     = newValue
+    Devices[vin].Units[CHARGINGCONNECTIONSTATUS].sValue  = str(newValue)
+    Devices[vin].Units[CHARGINGCONNECTIONSTATUS].Update(Log=True)
+
 
 def Heartbeat():
     global lastupdate
