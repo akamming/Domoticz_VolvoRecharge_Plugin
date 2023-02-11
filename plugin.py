@@ -21,9 +21,9 @@
     </description>
     <params>
         <param field="Username" label="Volvo On Call Username" required="true"/>
-        <param field="Password" label="Volvo On Call Password" required="true"/>
+        <param field="Password" label="Volvo On Call Password" required="true" password="true"/>
         <param field="Mode1" label="Primary VCC API Key" required="true"/>
-        <param field="Mode2" label="update interval" required="true"/>
+        <param field="Mode2" label="update interval in secs" required="true" default="900"/>
         <param field="Mode6" label="Debug" width="150px">
             <options>
                 <option label="None" value="0"  default="true" />
