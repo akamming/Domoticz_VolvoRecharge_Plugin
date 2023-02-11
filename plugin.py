@@ -59,15 +59,19 @@ lastupdate=None
 vin=None
 debugging=False
 
+#Device Numbers
+REMAININGRANGE=1
+FULLRANGE=2
+BATTERYCHARGELEVEL=3
 
 def Debug(text):
     if debugging:
         Domoticz.Log("DEBUG: "+str(text))
 
 def LoginToVOC():
-    global access_token,refresh_token
+    global access_token,refresh_token,expirytimestamp
 
-    Debug("Refreshtoken called")
+    Debug("LoginToVOC() called")
     
     try:
         response = requests.post(
@@ -91,7 +95,8 @@ def LoginToVOC():
         #retrieve tokens
         access_token = response.json()['access_token']
         refresh_token = response.json()['refresh_token']
-        #expirytimestamp
+        expirytimestamp=time.time()+response.json()['expires_in']
+
 
         #after login: Get Vin
         GetVin()
@@ -100,10 +105,44 @@ def LoginToVOC():
         Debug("Login failed:")
         Debug(error)
 
+def RefreshVOCToken():
+    global access_token,refresh_token,expirytimestamp
 
-def RefreshToken():
+    Debug("RefreshToken() called")
+    
+    try:
+        response = requests.post(
+            "https://volvoid.eu.volvocars.com/as/token.oauth2",
+            headers = {
+                'authorization': 'Basic aDRZZjBiOlU4WWtTYlZsNnh3c2c1WVFxWmZyZ1ZtSWFEcGhPc3kxUENhVXNpY1F0bzNUUjVrd2FKc2U0QVpkZ2ZJZmNMeXc=',
+                'content-type': 'application/x-www-form-urlencoded',
+                'user-agent': 'okhttp/4.10.0'
+            },
+            data = {
+                'access_token_manager_id': 'JWTh4Yf0b',
+                'grant_type': 'refresh_token',
+                'refresh_token': refresh_token
+            }
+        )
+        Debug("Refresh successful!")
+        Debug(response.json())
+
+        #retrieve tokens
+        access_token = response.json()['access_token']
+        refresh_token = response.json()['refresh_token']
+        expirytimestamp=time.time()+response.json()['expires_in']
+
+    except requests.exceptions.RequestException as error:
+        Debug("Refresh failed:")
+        Debug(error)
+
+
+def CheckRefreshToken():
     if refresh_token:
-        Debug("We have a refresh token, so refreshflow")
+        if expirytimestamp-time.time()<60:  #if expires in 60 seconds: refresh
+            RefreshVOCToken()
+        else:
+            Debug("Not refreshing token, expires in "+str(expirytimestamp-time.time())+" seconds")
     else:
         LoginToVOC()
 
@@ -166,17 +205,34 @@ def GetRechargeStatus():
     Debug(json.dumps(RechargeStatus))
     Debug("abc")
     Debug(Devices)
-    if (not "Range" in Devices):
-        Domoticz.Unit(Name="Range", Unit=1, Type=243, Subtype=31, DeviceID="Range", Options={'Custom': '1;km'}).Create()
-    Devices["Range"].Units[1].nValue     = int(RechargeStatus["data"]["electricRange"]["value"])
-    Devices["Range"].Units[1].sValue  = str(RechargeStatus["data"]["electricRange"]["value"])
-    Devices["Range"].Units[1].Update(Log=True)
+
+    #update Remaining Range Device
+    if (not vin in Devices) or (not REMAININGRANGE in Devices[vin].Units):
+        Domoticz.Unit(Name="electricRange", Unit=REMAININGRANGE, Type=243, Subtype=31, DeviceID=vin, Options={'Custom': '1;km'}).Create()
+    Devices[vin].Units[REMAININGRANGE].nValue     = int(RechargeStatus["data"]["electricRange"]["value"])
+    Devices[vin].Units[REMAININGRANGE].sValue  = str(RechargeStatus["data"]["electricRange"]["value"])
+    Devices[vin].Units[REMAININGRANGE].Update(Log=True)
+
+    #update Percentage Device
+    if (not BATTERYCHARGELEVEL in Devices[vin].Units):
+        Domoticz.Unit(Name="batteryChargeLevel", Unit=BATTERYCHARGELEVEL, Type=243, Subtype=6, DeviceID=vin).Create()
+    Devices[vin].Units[BATTERYCHARGELEVEL].nValue     = float(RechargeStatus["data"]["batteryChargeLevel"]["value"])
+    Devices[vin].Units[BATTERYCHARGELEVEL].sValue  = str(RechargeStatus["data"]["batteryChargeLevel"]["value"])
+    Devices[vin].Units[BATTERYCHARGELEVEL].Update(Log=True)
+
+    #update Fullrange Device
+    CalculatedRange=float(RechargeStatus["data"]["electricRange"]["value"]) * 100 / float(RechargeStatus["data"]["batteryChargeLevel"]["value"])
+    if (not FULLRANGE in Devices[vin].Units):
+        Domoticz.Unit(Name="fullRange", Unit=FULLRANGE, Type=243, Subtype=31, DeviceID=vin, Options={'Custom': '1;km'}).Create()
+    Devices[vin].Units[FULLRANGE].nValue     = CalculatedRange
+    Devices[vin].Units[FULLRANGE].sValue  = str(CalculatedRange)
+    Devices[vin].Units[FULLRANGE].Update(Log=True)
 
 def Heartbeat():
     global lastupdate
 
     Debug("Heartbeat() called")
-    RefreshToken()
+    CheckRefreshToken()
 
     if time.time()-lastupdate>=updateinterval:
         Debug("Updating")
@@ -192,7 +248,7 @@ class BasePlugin:
         return
 
     def onStart(self):
-        global vocuser,vocpass,vccapikey,debugging,lastupdate,updateinterval
+        global vocuser,vocpass,vccapikey,debugging,lastupdate,updateinterval,expirytimestamp
 
         Debug("OnStart Called")
         DumpConfigToLog()
@@ -208,7 +264,8 @@ class BasePlugin:
         vocpass=Parameters["Password"]
         vccapikey=Parameters["Mode1"]
         updateinterval=int(Parameters["Mode2"])
-        lastupdate=time.time()-updateinterval-1
+        lastupdate=time.time()-updateinterval-1 #force update
+        expirytimestamp=time.time()-1 #force update
 
         #1st pass
         Heartbeat()
