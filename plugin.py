@@ -23,7 +23,7 @@
         <param field="Username" label="Volvo On Call Username" required="true"/>
         <param field="Password" label="Volvo On Call Password" required="true"/>
         <param field="Mode1" label="Primary VCC API Key" required="true"/>
-        <param field="Mode2" label="update frequency" required="true"/>
+        <param field="Mode2" label="update interval" required="true"/>
         <param field="Mode6" label="Debug" width="150px">
             <options>
                 <option label="None" value="0"  default="true" />
@@ -44,6 +44,8 @@
 import DomoticzEx as Domoticz
 import requests
 import json
+import datetime
+import time
 
 #global vars
 vocuser=None
@@ -51,6 +53,9 @@ vocpass=None
 vccapikey=None
 access_token=None
 refresh_token=None
+expirytimestamp=None
+updateinterval=None
+lastupdate=None
 vin=None
 debugging=False
 
@@ -59,11 +64,11 @@ def Debug(text):
     if debugging:
         Domoticz.Log("DEBUG: "+str(text))
 
-def RefreshToken():
+def LoginToVOC():
     global access_token,refresh_token
 
     Debug("Refreshtoken called")
-
+    
     try:
         response = requests.post(
             "https://volvoid.eu.volvocars.com/as/token.oauth2",
@@ -82,12 +87,25 @@ def RefreshToken():
         )
         Debug("Login successful!")
         Debug(response.json())
+
+        #retrieve tokens
+        access_token = response.json()['access_token']
+        refresh_token = response.json()['refresh_token']
+        #expirytimestamp
+
+        #after login: Get Vin
+        GetVin()
+
     except requests.exceptions.RequestException as error:
         Debug("Login failed:")
         Debug(error)
 
-    access_token = response.json()['access_token']
-    refresh_token = response.json()['refresh_token']
+
+def RefreshToken():
+    if refresh_token:
+        Debug("We have a refresh token, so refreshflow")
+    else:
+        LoginToVOC()
 
 def GetVin():
     global vin
@@ -155,11 +173,17 @@ def GetRechargeStatus():
     Devices["Range"].Units[1].Update(Log=True)
 
 def Heartbeat():
+    global lastupdate
+
     Debug("Heartbeat() called")
     RefreshToken()
-    GetVin()
-    GetRechargeStatus()
-    
+
+    if time.time()-lastupdate>=updateinterval:
+        Debug("Updating")
+        lastupdate=time.time()
+        GetRechargeStatus()
+    else:
+        Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
 
 class BasePlugin:
     enabled = False
@@ -168,7 +192,7 @@ class BasePlugin:
         return
 
     def onStart(self):
-        global vocuser,vocpass,vccapikey,debugging
+        global vocuser,vocpass,vccapikey,debugging,lastupdate,updateinterval
 
         Debug("OnStart Called")
         DumpConfigToLog()
@@ -179,10 +203,14 @@ class BasePlugin:
         else:
             debugging=False
 
+        #initiate vars
         vocuser=Parameters["Username"]
         vocpass=Parameters["Password"]
         vccapikey=Parameters["Mode1"]
+        updateinterval=int(Parameters["Mode2"])
+        lastupdate=time.time()-updateinterval-1
 
+        #1st pass
         Heartbeat()
 
 
