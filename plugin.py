@@ -202,42 +202,43 @@ def VolvoAPI(url,mediatype):
         Debug("VolvoAPI failed:")
         Debug(error)
 
+def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
+    if (not vn in Devices) or (not idx in Devices[vn].Units):
+        Domoticz.Unit(Name=name, Unit=idx, Type=tp, Subtype=subtp, DeviceID=vn, Options=options).Create()
+    Devices[vin].Units[idx].nValue = nv
+    Devices[vin].Units[idx].sValue = sv
+    Devices[vin].Units[idx].Update(Log=True)
+
+def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
+    if (not vn in Devices) or (not idx in Devices[vn].Units):
+        Domoticz.Unit(Name=name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options).Create()
+    Devices[vin].Units[idx].nValue = nv
+    Devices[vin].Units[idx].sValue = sv
+    Devices[vin].Units[idx].Update(Log=True)
+
 def GetRechargeStatus():
     Debug("GetRechargeStatus() called")
     RechargeStatus=VolvoAPI("https://api.volvocars.com/energy/v1/vehicles/"+vin+"/recharge-status","application/vnd.volvocars.api.energy.vehicledata.v1+json")
     Debug(json.dumps(RechargeStatus))
-    Debug("abc")
-    Debug(Devices)
 
     #update Remaining Range Device
-    if (not vin in Devices) or (not REMAININGRANGE in Devices[vin].Units):
-        Domoticz.Unit(Name="electricRange", Unit=REMAININGRANGE, Type=243, Subtype=31, DeviceID=vin, Options={'Custom': '1;km'}).Create()
-    Devices[vin].Units[REMAININGRANGE].nValue     = int(RechargeStatus["data"]["electricRange"]["value"])
-    Devices[vin].Units[REMAININGRANGE].sValue  = str(RechargeStatus["data"]["electricRange"]["value"])
-    Devices[vin].Units[REMAININGRANGE].Update(Log=True)
+    UpdateSensor(vin,REMAININGRANGE,"electricRange",243,31,{'Custom':'1;km'},
+                 int(RechargeStatus["data"]["electricRange"]["value"]),
+                 float(RechargeStatus["data"]["electricRange"]["value"]))
+
 
     #update Percentage Device
-    if (not BATTERYCHARGELEVEL in Devices[vin].Units):
-        Domoticz.Unit(Name="batteryChargeLevel", Unit=BATTERYCHARGELEVEL, Type=243, Subtype=6, DeviceID=vin).Create()
-    Devices[vin].Units[BATTERYCHARGELEVEL].nValue     = float(RechargeStatus["data"]["batteryChargeLevel"]["value"])
-    Devices[vin].Units[BATTERYCHARGELEVEL].sValue  = str(RechargeStatus["data"]["batteryChargeLevel"]["value"])
-    Devices[vin].Units[BATTERYCHARGELEVEL].Update(Log=True)
+    UpdateSensor(vin,BATTERYCHARGELEVEL,"batteryChargeLevel",243,6,None,
+                 float(RechargeStatus["data"]["batteryChargeLevel"]["value"]),
+                 float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))
 
     #update Fullrange Device
     CalculatedRange=float(RechargeStatus["data"]["electricRange"]["value"]) * 100 / float(RechargeStatus["data"]["batteryChargeLevel"]["value"])
-    if (not FULLRANGE in Devices[vin].Units):
-        Domoticz.Unit(Name="fullRange", Unit=FULLRANGE, Type=243, Subtype=31, DeviceID=vin, Options={'Custom': '1;km'}).Create()
-    Devices[vin].Units[FULLRANGE].nValue     = CalculatedRange
-    Devices[vin].Units[FULLRANGE].sValue  = str(CalculatedRange)
-    Devices[vin].Units[FULLRANGE].Update(Log=True)
+    UpdateSensor(vin,FULLRANGE,"fullRange",243,31,{'Custom':'1;km'},
+                 int(CalculatedRange),
+                 float(CalculatedRange))
 
-    #update Charging Connect Status
-    if (not CHARGINGCONNECTIONSTATUS in Devices[vin].Units):
-        options = {"LevelActions": "|||",
-                  "LevelNames": "Disconnected|ACConnected|DCConnected|Unspecified",
-                  "LevelOffHidden": "false",
-                  "SelectorStyle": "1"}
-        Domoticz.Unit(Name="chargingConnectionStatus", Unit=CHARGINGCONNECTIONSTATUS, TypeName="Selector Switch", DeviceID=vin, Options=options).Create()
+    #Calculate Charging Connect Status value
     connstatus=RechargeStatus["data"]["chargingConnectionStatus"]["value"] 
     newValue=0
     if connstatus=="CONNECTION_STATUS_DISCONNECTED":
@@ -251,9 +252,14 @@ def GetRechargeStatus():
     else:
         newValue=30
 
-    Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue     = newValue
-    Devices[vin].Units[CHARGINGCONNECTIONSTATUS].sValue  = str(newValue)
-    Devices[vin].Units[CHARGINGCONNECTIONSTATUS].Update(Log=True)
+    #update selector switch for Charging Connection Status
+    options = {"LevelActions": "|||",
+              "LevelNames": "Disconnected|ACConnected|DCConnected|Unspecified",
+              "LevelOffHidden": "false",
+              "SelectorStyle": "1"}
+    UpdateSelectorSwitch(vin,CHARGINGCONNECTIONSTATUS,"chargingConnectionStatus",options,
+                 int(newValue),
+                 float(newValue))
 
 
 def Heartbeat():
