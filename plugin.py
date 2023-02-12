@@ -284,11 +284,11 @@ def GetRechargeStatus():
     newValue=0
     if chargestatus=="CHARGING_SYSTEM_IDLE":
         newValue=0
-    elif connstatus=="CHARGING_SYSTEM_CHARGING":
+    elif chargestatus=="CHARGING_SYSTEM_CHARGING":
         newValue=10
-    elif connstatus=="CHARGING_SYSTEM_FAULT":
+    elif chargestatus=="CHARGING_SYSTEM_FAULT":
         newValue=20
-    elif connstatus=="CHARGING_SYSTEM_UNSPECIFIED":
+    elif chargestatus=="CHARGING_SYSTEM_UNSPECIFIED":
         newValue=30
     else:
         newValue=30
