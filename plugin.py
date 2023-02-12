@@ -207,14 +207,14 @@ def VolvoAPI(url,mediatype):
 
 def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
-        Domoticz.Unit(Name=name, Unit=idx, Type=tp, Subtype=subtp, DeviceID=vn, Options=options).Create()
+        Domoticz.Unit(Name=name, Unit=idx, Type=tp, Subtype=subtp, DeviceID=vn, Options=options, Used=True).Create()
     Devices[vin].Units[idx].nValue = nv
     Devices[vin].Units[idx].sValue = sv
     Devices[vin].Units[idx].Update(Log=True)
 
 def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
-        Domoticz.Unit(Name=name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options).Create()
+        Domoticz.Unit(Name=name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options, Used=True).Create()
     Devices[vin].Units[idx].nValue = nv
     Devices[vin].Units[idx].sValue = sv
     Devices[vin].Units[idx].Update(Log=True)
@@ -352,7 +352,6 @@ def HandleClimatizationCommand(vin,idx,command):
             ct = "application/vnd.volvocars.api.connected-vehicle.climatizationstop.v2+json"
             nv=0
         
-        UpdateSwitch(vin,CLIMATIZATION,"Climatization",nv,command)
 
 
         try:
@@ -373,7 +372,14 @@ def HandleClimatizationCommand(vin,idx,command):
             sjson = json.dumps(status.json(), indent=4)
             Debug("\nResult JSON:")
             Debug(sjson)
-            climatizationoperationid=status.json()["operationId"]
+            if status.json()["status"]==200:
+                climatizationoperationid=status.json()["operationId"]
+                if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
+                    UpdateSwitch(vin,CLIMATIZATION,"Climatization",nv,command)
+                else:
+                    Debug("climatization did not start/stop, API returned code "+status.json()["data"]["invokeStatus"])
+            else:
+                Debug("climatizatation did not start/stop, webserver returned "+status.json()["status"])
 
         except requests.exceptions.RequestException as error:
             Debug("handleclimatization command failed:")
