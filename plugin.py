@@ -58,6 +58,8 @@ updateinterval=None
 lastupdate=None
 vin=None
 debugging=False
+climatizationactionid=None
+climatizationstoptimestamp=time.time()
 
 #Device Numbers
 REMAININGRANGE=1
@@ -66,6 +68,7 @@ BATTERYCHARGELEVEL=3
 CHARGINGCONNECTIONSTATUS=4
 CHARGINGSYSTEMSTATUS=5
 ESTIMATEDCHARGINGTIME=6
+CLIMATIZATION=7
 
 def Debug(text):
     if debugging:
@@ -216,6 +219,16 @@ def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
     Devices[vin].Units[idx].sValue = sv
     Devices[vin].Units[idx].Update(Log=True)
 
+def UpdateSwitch(vn,idx,name,nv,sv):
+    Debug ("UpdateSwitch("+str(vn)+","+str(idx)+","+str(name)+","+str(nv)+","+str(sv)+" called")
+    if (not vn in Devices) or (not idx in Devices[vn].Units):
+        Domoticz.Unit(Name=name, Unit=idx, Type=244, Subtype=73, DeviceID=vn, Used=True).Create()
+    Devices[vin].Units[idx].nValue = nv
+    Devices[vin].Units[idx].sValue = sv
+    Devices[vin].Units[idx].Update(Log=True)
+
+
+
 def GetRechargeStatus():
     Debug("GetRechargeStatus() called")
     RechargeStatus=VolvoAPI("https://api.volvocars.com/energy/v1/vehicles/"+vin+"/recharge-status","application/vnd.volvocars.api.energy.vehicledata.v1+json")
@@ -296,12 +309,76 @@ def Heartbeat():
     Debug("Heartbeat() called")
     CheckRefreshToken()
 
-    if time.time()-lastupdate>=updateinterval:
-        Debug("Updating")
-        lastupdate=time.time()
-        GetRechargeStatus()
+    if vin:
+        #handle climatization logic
+        if (not vin in Devices) or (not CLIMATIZATION in Devices[vin].Units):
+            #no Climate device, let's create
+            UpdateSwitch(vin,CLIMATIZATION,"Climatization",0,"Off")
+        else:
+            Debug("Already exists")
+
+        if Devices[vin].Units[CLIMATIZATION].nValue==1:
+            if time.time()>climatizationstoptimestamp:
+                Debug("Switch off climatization, timer expired")
+                UpdateSwitch(vin,CLIMATIZATION,"Climatization",0,"Off")
+            else:
+                Debug("Climatization on, will stop in "+str(climatizationstoptimestamp-time.time())+" seconds")
+        else:
+            Debug("Climatization switched off, do nothing")
+
+
+        #handle updates
+        if time.time()-lastupdate>=updateinterval:
+            # do updates
+            Debug("Updating")
+            lastupdate=time.time()
+            GetRechargeStatus()
+        else:
+            Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
     else:
-        Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
+        Debug("No vin, do nothing")
+
+def HandleClimatizationCommand(vin,idx,command):
+    global climatizationstoptimestamp,climatizationoperationid
+
+    if refresh_token:
+        url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/climatization-start'
+        ct = "application/vnd.volvocars.api.connected-vehicle.climatizationstart.v2+json"
+        climatizationstoptimestamp=time.time()+30*60  #make sure we switch off after 30 mins
+        nv=1
+        
+        if command=='Off':
+            url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/climatization-stop'
+            ct = "application/vnd.volvocars.api.connected-vehicle.climatizationstop.v2+json"
+            nv=0
+        
+        UpdateSwitch(vin,CLIMATIZATION,"Climatization",nv,command)
+
+
+        try:
+            Debug("URL: {}".format(url))
+            status = requests.post(
+                url,
+                headers= {
+                    "Content-Type": ct,
+                    "vcc-api-key": vccapikey,
+                    "Authorization": "Bearer " + access_token
+                }
+            )
+
+            Debug("\nResult:")
+            Debug(status)
+            sjson=status.json()
+
+            sjson = json.dumps(status.json(), indent=4)
+            Debug("\nResult JSON:")
+            Debug(sjson)
+            climatizationoperationid=status.json()["operationId"]
+
+        except requests.exceptions.RequestException as error:
+            Debug("handleclimatization command failed:")
+            Debug(error)
+
 
 class BasePlugin:
     enabled = False
@@ -329,9 +406,9 @@ class BasePlugin:
         lastupdate=time.time()-updateinterval-1 #force update
         expirytimestamp=time.time()-1 #force update
 
+
         #1st pass
         Heartbeat()
-
 
     def onStop(self):
         Debug("onStop called")
@@ -344,6 +421,12 @@ class BasePlugin:
 
     def onCommand(self, DeviceID, Unit, Command, Level, Color):
         Debug("onCommand called for Device " + str(DeviceID) + " Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
+
+        if Unit==CLIMATIZATION:
+            Debug("Handle climatization")
+            HandleClimatizationCommand(DeviceID,Unit,Command)
+        else:
+            Debug("handle the rest")
 
     def onNotification(self, Name, Subject, Text, Status, Priority, Sound, ImageFile):
         Debug("Notification: " + Name + "," + Subject + "," + Text + "," + Status + "," + str(Priority) + "," + Sound + "," + ImageFile)
