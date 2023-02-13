@@ -7,4 +7,5 @@ Basic flow works, but errors are not handled.. and gives a lot of garbage in log
 
 uses vcckey (can be acquired by creating an application on getting started page on developer.volvocars.com), and username/password from your Volvo app.
 
+Warning: Also included open/close commands for the car. So make sure your domoticz install is secure before using this plugin
 
