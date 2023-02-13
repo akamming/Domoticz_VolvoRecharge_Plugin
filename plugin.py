@@ -74,7 +74,7 @@ HOOD=9
 TAILGATE=10
 FRONTLEFTDOOR=11
 FRONTRIGHTDOOR=12
-REARLEFDOOR=13
+REARLEFTDOOR=13
 REARRIGHTDOOR=14
 FRONTLEFTWINDOW=15
 FRONTRIGHTWINDOW=16
@@ -256,14 +256,22 @@ def UpdateDoorOrWindow(vin,idx,name,value):
 
 def GetDoorWindowAndLockStatus():
     Debug("GetDoorAndLockStatus() Called")
+    
     doors=VolvoAPI("https://api.volvocars.com/connected-vehicle/v1/vehicles/"+vin+"/doors","application/vnd.volvocars.api.connected-vehicle.vehicledata.v1+json")
-    windows=VolvoAPI("https://api.volvocars.com/connected-vehicle/v1/vehicles/"+vin+"/windows","application/vnd.volvocars.api.connected-vehicle.vehicledata.v1+json")
     Debug(json.dumps(doors))
-    Debug(json.dumps(windows))
-
     UpdateDoorOrWindow(vin,HOOD,"Hood",doors["data"]["hood"]["value"])
     UpdateDoorOrWindow(vin,TAILGATE,"Tailgate",doors["data"]["tailGate"]["value"])
+    UpdateDoorOrWindow(vin,FRONTLEFTDOOR,"FrontLeftDoor",doors["data"]["frontLeft"]["value"])
+    UpdateDoorOrWindow(vin,FRONTRIGHTDOOR,"FrontRightDoor",doors["data"]["frontRight"]["value"])
+    UpdateDoorOrWindow(vin,REARLEFTDOOR,"RearLeftDoor",doors["data"]["rearLeft"]["value"])
+    UpdateDoorOrWindow(vin,REARRIGHTDOOR,"RearRightDoor",doors["data"]["rearRight"]["value"])
 
+    windows=VolvoAPI("https://api.volvocars.com/connected-vehicle/v1/vehicles/"+vin+"/windows","application/vnd.volvocars.api.connected-vehicle.vehicledata.v1+json")
+    Debug(json.dumps(windows))
+    UpdateDoorOrWindow(vin,FRONTLEFTWINDOW,"FrontLeftWindow",windows["data"]["frontLeft"]["value"])
+    UpdateDoorOrWindow(vin,FRONTRIGHTWINDOW,"FrontRightWindow",windows["data"]["frontRight"]["value"])
+    UpdateDoorOrWindow(vin,REARLEFTWINDOW,"RearLeftWindow",windows["data"]["rearLeft"]["value"])
+    UpdateDoorOrWindow(vin,REARRIGHTWINDOW,"RearRightWindow",windows["data"]["rearRight"]["value"])
 
 def GetRechargeStatus():
     Debug("GetRechargeStatus() called")
