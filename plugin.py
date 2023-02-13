@@ -219,14 +219,14 @@ def VolvoAPI(url,mediatype):
 
 def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
-        Domoticz.Unit(Name=name, Unit=idx, Type=tp, Subtype=subtp, DeviceID=vn, Options=options, Used=True).Create()
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=tp, Subtype=subtp, DeviceID=vn, Options=options, Used=True).Create()
     Devices[vin].Units[idx].nValue = nv
     Devices[vin].Units[idx].sValue = sv
     Devices[vin].Units[idx].Update(Log=True)
 
 def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
-        Domoticz.Unit(Name=name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options, Used=True).Create()
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options, Used=True).Create()
     Devices[vin].Units[idx].nValue = nv
     Devices[vin].Units[idx].sValue = sv
     Devices[vin].Units[idx].Update(Log=True)
@@ -234,15 +234,15 @@ def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
 def UpdateSwitch(vn,idx,name,nv,sv):
     Debug ("UpdateSwitch("+str(vn)+","+str(idx)+","+str(name)+","+str(nv)+","+str(sv)+" called")
     if (not vn in Devices) or (not idx in Devices[vn].Units):
-        Domoticz.Unit(Name=name, Unit=idx, Type=244, Subtype=73, DeviceID=vn, Used=True).Create()
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, DeviceID=vn, Used=True).Create()
     Devices[vin].Units[idx].nValue = nv
     Devices[vin].Units[idx].sValue = sv
     Devices[vin].Units[idx].Update(Log=True)
 
 def UpdateDoorOrWindow(vin,idx,name,value):
-    Debug ("UpdateSwitch("+str(vin)+","+str(idx)+","+str(name)+","+str(value)+") called")
+    Debug ("UpdateDoorOrWindow("+str(vin)+","+str(idx)+","+str(name)+","+str(value)+") called")
     if (not vin in Devices) or (not idx in Devices[vin].Units):
-        Domoticz.Unit(Name=name, Unit=idx, Type=244, Subtype=73, Switchtype=11, DeviceID=vin, Used=True).Create()
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=11, DeviceID=vin, Used=True).Create()
 
     if value=="OPEN":
         Devices[vin].Units[idx].nValue = 1
@@ -250,6 +250,20 @@ def UpdateDoorOrWindow(vin,idx,name,value):
     else:
         Devices[vin].Units[idx].nValue = 0
         Devices[vin].Units[idx].sValue = "Closed"
+    
+    Devices[vin].Units[idx].Update(Log=True)
+
+def UpdateLock(vin,idx,name,value):
+    Debug ("UpdateLock("+str(vin)+","+str(idx)+","+str(name)+","+str(value)+") called")
+    if (not vin in Devices) or (not idx in Devices[vin].Units):
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=19, DeviceID=vin, Used=True).Create()
+
+    if value=="LOCKED":
+        Devices[vin].Units[idx].nValue = 1
+        Devices[vin].Units[idx].sValue = "Locked"
+    else:
+        Devices[vin].Units[idx].nValue = 0
+        Devices[vin].Units[idx].sValue = "Unlocked"
     
     Devices[vin].Units[idx].Update(Log=True)
 
@@ -265,6 +279,7 @@ def GetDoorWindowAndLockStatus():
     UpdateDoorOrWindow(vin,FRONTRIGHTDOOR,"FrontRightDoor",doors["data"]["frontRight"]["value"])
     UpdateDoorOrWindow(vin,REARLEFTDOOR,"RearLeftDoor",doors["data"]["rearLeft"]["value"])
     UpdateDoorOrWindow(vin,REARRIGHTDOOR,"RearRightDoor",doors["data"]["rearRight"]["value"])
+    UpdateLock(vin,CARLOCKED,"CarLocked",doors["data"]["carLocked"]["value"])
 
     windows=VolvoAPI("https://api.volvocars.com/connected-vehicle/v1/vehicles/"+vin+"/windows","application/vnd.volvocars.api.connected-vehicle.vehicledata.v1+json")
     Debug(json.dumps(windows))
@@ -431,6 +446,50 @@ def HandleClimatizationCommand(vin,idx,command):
             Debug(error)
 
 
+def HandleLockCommand(vin,idx,command):
+    global climatizationstoptimestamp,climatizationoperationid
+
+    if refresh_token:
+        url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/lock'
+        ct = "application/vnd.volvocars.api.connected-vehicle.lock.v2+json"
+        cmd = "LOCKED"
+        
+        if command=='Off':
+            url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/unlock'
+            ct = "application/vnd.volvocars.api.connected-vehicle.unlock.v2+json"
+            cmd = "UNLOCKED"
+
+        try:
+            Debug("URL: {}".format(url))
+            status = requests.post(
+                url,
+                headers= {
+                    "Content-Type": ct,
+                    "vcc-api-key": vccapikey,
+                    "Authorization": "Bearer " + access_token
+                }
+            )
+
+            Debug("\nResult:")
+            Debug(status)
+            sjson=status.json()
+
+            sjson = json.dumps(status.json(), indent=4)
+            Debug("\nResult JSON:")
+            Debug(sjson)
+            if status.json()["status"]==200:
+                if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
+                    UpdateLock(vin,CARLOCKED,"CarLocked",cmd)
+                else:
+                    Debug("Car did not lock/unlock, API returned code "+status.json()["data"]["invokeStatus"])
+            else:
+                Debug("car did not lock/unlock, webserver returned "+status.json()["status"])
+
+        except requests.exceptions.RequestException as error:
+            Debug("lock/unlock command failed:")
+            Debug(error)
+
+
 class BasePlugin:
     enabled = False
     def __init__(self):
@@ -476,6 +535,10 @@ class BasePlugin:
         if Unit==CLIMATIZATION:
             Debug("Handle climatization")
             HandleClimatizationCommand(DeviceID,Unit,Command)
+        elif Unit==CARLOCKED:
+            Debug("Handle CarLock")
+            HandleLockCommand(DeviceID,Unit,Command)
+
         else:
             Debug("handle the rest")
 
