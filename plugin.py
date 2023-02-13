@@ -69,6 +69,18 @@ CHARGINGCONNECTIONSTATUS=4
 CHARGINGSYSTEMSTATUS=5
 ESTIMATEDCHARGINGTIME=6
 CLIMATIZATION=7
+CARLOCKED=8
+HOOD=9
+TAILGATE=10
+FRONTLEFTDOOR=11
+FRONTRIGHTDOOR=12
+REARLEFDOOR=13
+REARRIGHTDOOR=14
+FRONTLEFTWINDOW=15
+FRONTRIGHTWINDOW=16
+REARLEFTWINDOW=17
+REARRIGHTWINDOW=18
+
 
 def Debug(text):
     if debugging:
@@ -227,6 +239,30 @@ def UpdateSwitch(vn,idx,name,nv,sv):
     Devices[vin].Units[idx].sValue = sv
     Devices[vin].Units[idx].Update(Log=True)
 
+def UpdateDoorOrWindow(vin,idx,name,value):
+    Debug ("UpdateSwitch("+str(vin)+","+str(idx)+","+str(name)+","+str(value)+") called")
+    if (not vin in Devices) or (not idx in Devices[vin].Units):
+        Domoticz.Unit(Name=name, Unit=idx, Type=244, Subtype=73, Switchtype=11, DeviceID=vin, Used=True).Create()
+
+    if value=="OPEN":
+        Devices[vin].Units[idx].nValue = 1
+        Devices[vin].Units[idx].sValue = "Open"
+    else:
+        Devices[vin].Units[idx].nValue = 0
+        Devices[vin].Units[idx].sValue = "Closed"
+    
+    Devices[vin].Units[idx].Update(Log=True)
+
+
+def GetDoorWindowAndLockStatus():
+    Debug("GetDoorAndLockStatus() Called")
+    doors=VolvoAPI("https://api.volvocars.com/connected-vehicle/v1/vehicles/"+vin+"/doors","application/vnd.volvocars.api.connected-vehicle.vehicledata.v1+json")
+    windows=VolvoAPI("https://api.volvocars.com/connected-vehicle/v1/vehicles/"+vin+"/windows","application/vnd.volvocars.api.connected-vehicle.vehicledata.v1+json")
+    Debug(json.dumps(doors))
+    Debug(json.dumps(windows))
+
+    UpdateDoorOrWindow(vin,HOOD,"Hood",doors["data"]["hood"]["value"])
+    UpdateDoorOrWindow(vin,TAILGATE,"Tailgate",doors["data"]["tailGate"]["value"])
 
 
 def GetRechargeStatus():
@@ -333,6 +369,7 @@ def Heartbeat():
             Debug("Updating")
             lastupdate=time.time()
             GetRechargeStatus()
+            GetDoorWindowAndLockStatus()
         else:
             Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
     else:
