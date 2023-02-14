@@ -19,7 +19,7 @@
         <ul style="list-style-type:square">
             <li>Use your Volvo on Call Username/password, which is linked to your vehicle.</li>
             <li>Register an app on https://developer.volvocars.com/apis/docs/getting-started/ and copy/past the primary app key in the config below</li>
-            <li>Set an update interval. If you don't pay Volvo for the API, you're only allowed to do 10.000 calls per day.. so make sure not to set the update interval too high. The plugin does several calles per interval.
+            <li>Set an update interval. If you don't pay Volvo for the API, you're only allowed to do 10.000 calls per day.. so make sure not to set the update interval too high. The plugin does several calles per interval.</li>
         </ul>
     </description>
     <params>
