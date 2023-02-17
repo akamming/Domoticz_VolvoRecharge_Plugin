@@ -181,34 +181,46 @@ def GetVin():
     global vin
 
     Debug("GetVin called")
-    if len(Parameters["Mode3"])==0:
-        Debug("No Vin entered in Config, try getting one from Volvo account")
-        try:
-            vehicles = requests.get(
-                "https://api.volvocars.com/extended-vehicle/v1/vehicles",
-                headers= {
-                    "accept": "application/json",
-                    "vcc-api-key": vccapikey,
-                    "Authorization": "Bearer " + access_token
-                }
-            )
-            Debug("\nResult:")
-            Debug(vehicles)
-            vjson=vehicles.json()
+    try:
+        vin=None
+        vehicles = requests.get(
+            "https://api.volvocars.com/extended-vehicle/v1/vehicles",
+            headers= {
+                "accept": "application/json",
+                "vcc-api-key": vccapikey,
+                "Authorization": "Bearer " + access_token
+            }
+        )
+        Debug("\nResult:")
+        Debug(vehicles)
+        vjson=vehicles.json()
 
-            vehiclesjson = json.dumps(vehicles.json(), indent=4)
-            Debug("\nResult JSON:")
-            Debug(vehiclesjson)
-            vin = vjson["vehicles"][0]["id"]
-            Info("Retreived Vehicle VIN: "+vin)
+        vehiclesjson = json.dumps(vehicles.json(), indent=4)
+        Debug("\nResult JSON:")
+        Debug(vehiclesjson)
+        if (("vehicles") in vjson.keys()) and (len(vjson["vehicles"])>0):
+            Info(str(len(vjson["vehicles"]))+" car(s) attached to your Volvo ID account: ")
+            for x in vjson["vehicles"]:
+                Info("     "+x["id"])
+            if len(Parameters["Mode3"])==0:
+                vin = vjson["vehicles"][0]["id"]
+                Info("No VIN in plugin config, selecting the 1st one ("+vin+") in your Volvo ID")
+            else:
+                for x in vjson["vehicles"]:
+                    if x["id"]==Parameters["Mode3"]:
+                        vin=Parameters["Mode3"]
+                        Info("Using configured VIN "+str(vin))
+                    else:
+                        Debug("Ignoring VIN "+x["id"])
+                if vin==None:
+                    Error("manually configured VIN "+Parameters["Mode3"]+" does not exist in your Volvo id account, check your config")
+        else:
+            Error ("no cars configured for this volvo id")
 
-        except requests.exceptions.RequestException as error:
-            Debug("Get vehicles failed:")
-            Debug(error)
-            vin=None
-    else:
-        vin=Parameters["Mode3"]
-        Info("Using configured VIN "+str(vin))
+    except requests.exceptions.RequestException as error:
+        Debug("Get vehicles failed:")
+        Debug(error)
+        vin=None
 
 
 def VolvoAPI(url,mediatype):
@@ -243,6 +255,7 @@ def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
     Devices[vin].Units[idx].nValue = nv
     Devices[vin].Units[idx].sValue = sv
     Devices[vin].Units[idx].Update(Log=True)
+    Domoticz.Log("General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
 
 def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
@@ -250,6 +263,7 @@ def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
     Devices[vin].Units[idx].nValue = nv
     Devices[vin].Units[idx].sValue = sv
     Devices[vin].Units[idx].Update(Log=True)
+    Domoticz.Log("Selector Switch ("+Devices[vin].Units[idx].Name+")")
 
 def UpdateSwitch(vn,idx,name,nv,sv):
     Debug ("UpdateSwitch("+str(vn)+","+str(idx)+","+str(name)+","+str(nv)+","+str(sv)+" called")
@@ -258,6 +272,8 @@ def UpdateSwitch(vn,idx,name,nv,sv):
     Devices[vin].Units[idx].nValue = nv
     Devices[vin].Units[idx].sValue = sv
     Devices[vin].Units[idx].Update(Log=True)
+    Domoticz.Log("On/Off Switch ("+Devices[vin].Units[idx].Name+")")
+
 
 def UpdateDoorOrWindow(vin,idx,name,value):
     Debug ("UpdateDoorOrWindow("+str(vin)+","+str(idx)+","+str(name)+","+str(value)+") called")
@@ -272,6 +288,7 @@ def UpdateDoorOrWindow(vin,idx,name,value):
         Devices[vin].Units[idx].sValue = "Closed"
     
     Devices[vin].Units[idx].Update(Log=True)
+    Domoticz.Log("Door Contact ("+Devices[vin].Units[idx].Name+")")
 
 def UpdateLock(vin,idx,name,value):
     Debug ("UpdateLock("+str(vin)+","+str(idx)+","+str(name)+","+str(value)+") called")
@@ -286,6 +303,7 @@ def UpdateLock(vin,idx,name,value):
         Devices[vin].Units[idx].sValue = "Unlocked"
     
     Devices[vin].Units[idx].Update(Log=True)
+    Domoticz.Log("Door Lock ("+Devices[vin].Units[idx].Name+")")
 
 
 def GetDoorWindowAndLockStatus():
