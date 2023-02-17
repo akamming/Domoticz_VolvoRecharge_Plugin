@@ -531,7 +531,7 @@ def HandleLockCommand(vin,idx,command):
                 else:
                     Error("Car did not lock/unlock, API returned code "+status.json()["data"]["invokeStatus"])
             else:
-                Error("car did not lock/unlock, webserver returned "+status.json()["status"])
+                Error("car did not lock/unlock, webserver returned "+str(status.json()["status"]))
 
         except requests.exceptions.RequestException as error:
             Error("lock/unlock command failed:")
