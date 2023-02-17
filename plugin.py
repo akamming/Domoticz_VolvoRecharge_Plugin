@@ -120,20 +120,23 @@ def LoginToVOC():
                 'scope': 'openid email profile care_by_volvo:financial_information:invoice:read care_by_volvo:financial_information:payment_method care_by_volvo:subscription:read customer:attributes customer:attributes:write order:attributes vehicle:attributes tsp_customer_api:all conve:brake_status conve:climatization_start_stop conve:command_accessibility conve:commands conve:diagnostics_engine_status conve:diagnostics_workshop conve:doors_status conve:engine_status conve:environment conve:fuel_status conve:honk_flash conve:lock conve:lock_status conve:navigation conve:odometer_status conve:trip_statistics conve:tyre_status conve:unlock conve:vehicle_relation conve:warnings conve:windows_status energy:battery_charge_level energy:charging_connection_status energy:charging_system_status energy:electric_range energy:estimated_charging_time energy:recharge_status vehicle:attributes'
             }
         )
-        Info("Login successful!")
         Debug(response.json())
+        resp=response.json()
+        if "error" in resp.keys():
+            Error("Login Failed, check your config, Response from Volvo: "+str(resp))
+        else:
+            Info("Login successful!")
 
-        #retrieve tokens
-        access_token = response.json()['access_token']
-        refresh_token = response.json()['refresh_token']
-        expirytimestamp=time.time()+response.json()['expires_in']
+            #retrieve tokens
+            access_token = resp['access_token']
+            refresh_token = resp['refresh_token']
+            expirytimestamp=time.time()+resp['expires_in']
 
-
-        #after login: Get Vin
-        GetVin()
+            #after login: Get Vin
+            GetVin()
 
     except requests.exceptions.RequestException as error:
-        Error("Login failed:")
+        Error("Login failed, check internet connection:")
         Error(error)
 
 def RefreshVOCToken():
@@ -555,7 +558,8 @@ class BasePlugin:
             debugging=False
         else:
             debugging=False
-            info=False
+            info=True
+
 
         Debug("OnStart called")
 
