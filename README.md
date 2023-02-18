@@ -12,7 +12,8 @@ pls look at the above links to API for device descriptions
 
 There are 2 devices which can send commands to the volvo
 - The CarLock device can lock and unlock your car
-- The climatisation device can start and stop navigation.  This switch works very simple. If you start climatisation the switch will go off after 30 mins. This is just a timer and during this 30 mins you can stop the climatisation which was started by the plugin. The switch will not detect climatisation status when it was started using the app or the car itself (Limitation by the API: There is no API to check for climatisation status..)
+- The climatisation device can start and stop navigation.  
+This last switch has a very simple implementatiation. If you start climatisation the switch will go off after 30 mins. This is just a timer and during this 30 mins you can stop the climatisation which was started by the plugin. The switch will not detect climatisation status when it was started using the app or the car itself (Limitation by the API: There is no API to check for climatisation status..)
 
 ## Instructions
 - go to the plugin 
@@ -40,3 +41,5 @@ I would really like to add API calls like
 - https://api.volvocars.com/connected-vehicle/v1/vehicles/{vin}/tyres
 - https://developer.volvocars.com/apis/connected-vehicle/endpoints/diagnostics/
 However i noticed that the output values are strings (e.g. fronleft.value for a tyre) which are different thant the docs. And since i cannot force to test all values on my car: If anyone can help me on correct documenation, let me know (by reporting an "issue") 
+
+Also could not get https://developer.volvocars.com/apis/connected-vehicle/endpoints/commands/#get-sent-command-details to work. The command give me a OK, but doesn't give the correct output... (need this for checking if climatisation is still running)
