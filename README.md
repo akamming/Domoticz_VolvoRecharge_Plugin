@@ -7,10 +7,10 @@ domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your
 - doors, windows and lock status, including locking and unlocking of doors (https://developer.volvocars.com/apis/connected-vehicle/endpoints/doors-windows-locks/)
 - start/stop climatisation (https://developer.volvocars.com/apis/connected-vehicle/endpoints/climate/)
 
-#Devices
+## Devices
 pls look at the above links to API
 
-#How to get it to work
+## Instructions
 - go to the plugin 
 - (if you don't have a volco on call account) Create a Volvo on Call Username/password, which is linked to your vehicle. (basically: install the follow on call app on your handset and follow instructions)
 - Enter the username/password in the plugin config.
@@ -19,7 +19,7 @@ pls look at the above links to API
    - Set a VIN if you connected more than one car to your volvo account. If empty the plugin will use the 1st car attached to your Volvo account
    - Set an update interval. If you don't pay Volvo for the API, you're only allowed to do 10.000 calls per day.. so make sure not to set the update interval too low. The plugin does 4 calls on every interval.
 
-#Testing
+## Testing
 Reported to work for
 - Volvo XC40 Pure Electric
 - Volco XC40 Pure Electric Twin
