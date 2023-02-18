@@ -23,6 +23,7 @@ This last switch has a very simple implementatiation. If you start climatisation
 - Optional: 
    - Set a VIN if you connected more than one car to your volvo account. If empty the plugin will use the 1st car attached to your Volvo account
    - Set an update interval. If you don't pay Volvo for the API, you're only allowed to do 10.000 calls per day.. so make sure not to set the update interval too low. The plugin does 4 calls on every interval.
+   - Set your battery pack size (causes the plugin to calculate the average efficiency of your car in kWh/100km based on remaing battery and range estimate)
 
 ## Security
 This is a normal domoticz plugin, so as secure as every other one. However since with this plugin you can lock and unlock your car, check your if your domoticz install, especially if it's connected to the internet, if it is really secure.You don't want someone to hack your domoticz and then also have access to your car 

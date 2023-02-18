@@ -20,6 +20,7 @@
             <li>Use your Volvo on Call Username/password, which is linked to your vehicle.</li>
             <li>Register an app on https://developer.volvocars.com/apis/docs/getting-started/ and copy/past the primary app key in the config below</li>
             <li>Optional: Set a VIN if you connected more than one car to your volvo account. If empty the plugin will use the 1st car attached to your Volvo account</li>
+            <li>Optional: Set the size of your battery pack if you want the plugin to calculate your estimated efficiency in kWh/100km</li>
             <li>Set an update interval. If you don't pay Volvo for the API, you're only allowed to do 10.000 calls per day.. so make sure not to set the update interval too high. The plugin does several calles per interval.</li>
         </ul>
     </description>
@@ -29,6 +30,7 @@
         <param field="Mode1" label="Primary VCC API Key" required="true"/>
         <param field="Mode2" label="update interval in secs" required="true" default="900"/>
         <param field="Mode3" label="VIN (optional)"/>
+        <param field="Mode4" label="Battery Pakc Size (optional)" default="67"/>
         <param field="Mode6" label="Debug" width="150px">
             <options>
                 <option label="None" value="0"  default="true" />
@@ -86,7 +88,7 @@ FRONTLEFTWINDOW=15
 FRONTRIGHTWINDOW=16
 REARLEFTWINDOW=17
 REARRIGHTWINDOW=18
-
+ESTIMATEDEFFICIENCY=19
 
 def Debug(text):
     if debugging:
@@ -379,7 +381,17 @@ def GetRechargeStatus():
         CalculatedRange=float(RechargeStatus["data"]["electricRange"]["value"]) * 100 / float(RechargeStatus["data"]["batteryChargeLevel"]["value"])
         UpdateSensor(vin,FULLRANGE,"fullRange",243,31,{'Custom':'1;km'},
                      int(CalculatedRange),
-                     float(CalculatedRange))
+                     "{:.1f}".format(CalculatedRange))
+
+        #update EstimatedEfficiency Device
+        if (len(Parameters["Mode4"])>0) and (int(Parameters["Mode4"])>0):
+            estimatedEfficiency=(float(Parameters["Mode4"])*float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))  / float(RechargeStatus["data"]["electricRange"]["value"])
+            UpdateSensor(vin,ESTIMATEDEFFICIENCY,"estimatedEfficiency",243,31,{'Custom':'1;kWh/100km'},
+                         int(estimatedEfficiency),
+                         "{:.1f}".format(estimatedEfficiency))
+        else:
+            Info("No battery pack size specified in config, not calculating estimated efficiency")
+
 
         #update Remaining ChargingTime Device
         UpdateSensor(vin,ESTIMATEDCHARGINGTIME,"estimatedChargingTime",243,31,{'Custom':'1;min'},
