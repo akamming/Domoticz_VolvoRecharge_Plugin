@@ -120,20 +120,30 @@ def LoginToVOC():
                 'scope': 'openid email profile care_by_volvo:financial_information:invoice:read care_by_volvo:financial_information:payment_method care_by_volvo:subscription:read customer:attributes customer:attributes:write order:attributes vehicle:attributes tsp_customer_api:all conve:brake_status conve:climatization_start_stop conve:command_accessibility conve:commands conve:diagnostics_engine_status conve:diagnostics_workshop conve:doors_status conve:engine_status conve:environment conve:fuel_status conve:honk_flash conve:lock conve:lock_status conve:navigation conve:odometer_status conve:trip_statistics conve:tyre_status conve:unlock conve:vehicle_relation conve:warnings conve:windows_status energy:battery_charge_level energy:charging_connection_status energy:charging_system_status energy:electric_range energy:estimated_charging_time energy:recharge_status vehicle:attributes'
             }
         )
-        Debug(response.json())
-        resp=response.json()
-        if "error" in resp.keys():
-            Error("Login Failed, check your config, Response from Volvo: "+str(resp))
+        if response.status_code!=200:
+            Error("VolvoAPI failed calling https://volvoid.eu.volvocars.com/as/token.oauth2, HTTP Statuscode "+str(response.status_code))
+            access_token=None
+            refresh_token=None
         else:
-            Info("Login successful!")
+            Debug(response.content)
+            try:
+                resp=response.json()
+                if resp==None or "error" in resp.keys():
+                    Error("Login Failed, check your config, Response from Volvo: "+str(response.content))
+                    refresh_token=None
+                    access_token=None
+                else:
+                    Info("Login successful!")
 
-            #retrieve tokens
-            access_token = resp['access_token']
-            refresh_token = resp['refresh_token']
-            expirytimestamp=time.time()+resp['expires_in']
+                    #retrieve tokens
+                    access_token = resp['access_token']
+                    refresh_token = resp['refresh_token']
+                    expirytimestamp=time.time()+resp['expires_in']
 
-            #after login: Get Vin
-            GetVin()
+                    #after login: Get Vin
+                    GetVin()
+            except ValueError as exc:
+                Error("Login Failed: unable to process json response from https://volvoid.eu.volvocars.com/as/token.oauth2 : "+str(exc))
 
     except requests.exceptions.RequestException as error:
         Error("Login failed, check internet connection:")
@@ -158,13 +168,18 @@ def RefreshVOCToken():
                 'refresh_token': refresh_token
             }
         )
-        Info("Refreshed token successful!")
-        Debug(response.json())
+        if response.status_code!=200:
+            Error("VolvoAPI failed calling https://volvoid.eu.volvocars.com/as/token.oauth2, HTTP Statuscode "+str(response.status_code))
+            access_token=None
+            refresh_token=None
+        else:
+            Info("Refreshed token successful!")
+            Debug(response.json())
 
-        #retrieve tokens
-        access_token = response.json()['access_token']
-        refresh_token = response.json()['refresh_token']
-        expirytimestamp=time.time()+response.json()['expires_in']
+            #retrieve tokens
+            access_token = response.json()['access_token']
+            refresh_token = response.json()['refresh_token']
+            expirytimestamp=time.time()+response.json()['expires_in']
 
     except requests.exceptions.RequestException as error:
         Error("Refresh failed:")
@@ -201,24 +216,29 @@ def GetVin():
         vehiclesjson = json.dumps(vehicles.json(), indent=4)
         Debug("\nResult JSON:")
         Debug(vehiclesjson)
-        if (("vehicles") in vjson.keys()) and (len(vjson["vehicles"])>0):
-            Info(str(len(vjson["vehicles"]))+" car(s) attached to your Volvo ID account: ")
-            for x in vjson["vehicles"]:
-                Info("     "+x["id"])
-            if len(Parameters["Mode3"])==0:
-                vin = vjson["vehicles"][0]["id"]
-                Info("No VIN in plugin config, selecting the 1st one ("+vin+") in your Volvo ID")
-            else:
-                for x in vjson["vehicles"]:
-                    if x["id"]==Parameters["Mode3"]:
-                        vin=Parameters["Mode3"]
-                        Info("Using configured VIN "+str(vin))
-                    else:
-                        Debug("Ignoring VIN "+x["id"])
-                if vin==None:
-                    Error("manually configured VIN "+Parameters["Mode3"]+" does not exist in your Volvo id account, check your config")
+        if vehicles.status_code!=200:
+            Error("VolvoAPI failed calling https://api.volvocars.com/extended-vehicle/v1/vehicles, HTTP Statuscode "+str(vehicles.status_code))
+            return None
         else:
-            Error ("no cars configured for this volvo id")
+            if (("vehicles") in vjson.keys()) and (len(vjson["vehicles"])>0):
+                Info(str(len(vjson["vehicles"]))+" car(s) attached to your Volvo ID account: ")
+                for x in vjson["vehicles"]:
+                    Info("     "+x["id"])
+                if len(Parameters["Mode3"])==0:
+                    vin = vjson["vehicles"][0]["id"]
+                    Info("No VIN in plugin config, selecting the 1st one ("+vin+") in your Volvo ID")
+                else:
+                    for x in vjson["vehicles"]:
+                        if x["id"]==Parameters["Mode3"]:
+                            vin=Parameters["Mode3"]
+                            Info("Using configured VIN "+str(vin))
+                        else:
+                            Debug("Ignoring VIN "+x["id"])
+                    if vin==None:
+                        Error("manually configured VIN "+Parameters["Mode3"]+" does not exist in your Volvo id account, check your config")
+            else:
+                Error ("no cars configured for this volvo id")
+                vin=None
 
     except requests.exceptions.RequestException as error:
         Debug("Get vehicles failed:")
@@ -240,12 +260,15 @@ def VolvoAPI(url,mediatype):
 
         Debug("\nResult:")
         Debug(status)
-        sjson=status.json()
-
-        sjson = json.dumps(status.json(), indent=4)
-        Debug("\nResult JSON:")
-        Debug(sjson)
-        return status.json()
+        if status.status_code!=200:
+            Error("VolvoAPI failed calling "+url+", HTTP Statuscode "+str(status.status_code))
+            return None
+        else:
+            sjson=status.json()
+            sjson = json.dumps(status.json(), indent=4)
+            Debug("\nResult JSON:")
+            Debug(sjson)
+            return status.json()
 
     except requests.exceptions.RequestException as error:
         Error("VolvoAPI failed calling "+url+" with mediatype "+mediatype+" failed")
