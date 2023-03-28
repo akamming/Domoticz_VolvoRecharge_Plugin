@@ -340,12 +340,12 @@ def GetDoorWindowAndLockStatus():
     doors=VolvoAPI("https://api.volvocars.com/connected-vehicle/v1/vehicles/"+vin+"/doors","application/vnd.volvocars.api.connected-vehicle.vehicledata.v1+json")
     if doors:
         Debug(json.dumps(doors))
-        UpdateDoorOrWindow(vin,HOOD,"Hood",doors["data"]["hood"]["value"])
-        UpdateDoorOrWindow(vin,TAILGATE,"Tailgate",doors["data"]["tailGate"]["value"])
-        UpdateDoorOrWindow(vin,FRONTLEFTDOOR,"FrontLeftDoor",doors["data"]["frontLeft"]["value"])
-        UpdateDoorOrWindow(vin,FRONTRIGHTDOOR,"FrontRightDoor",doors["data"]["frontRight"]["value"])
-        UpdateDoorOrWindow(vin,REARLEFTDOOR,"RearLeftDoor",doors["data"]["rearLeft"]["value"])
-        UpdateDoorOrWindow(vin,REARRIGHTDOOR,"RearRightDoor",doors["data"]["rearRight"]["value"])
+        UpdateDoorOrWindow(vin,HOOD,"Hood",doors["data"]["hoodOpen"]["value"])
+        UpdateDoorOrWindow(vin,TAILGATE,"Tailgate",doors["data"]["tailGateOpen"]["value"])
+        UpdateDoorOrWindow(vin,FRONTLEFTDOOR,"FrontLeftDoor",doors["data"]["frontLeftDoorOpen"]["value"])
+        UpdateDoorOrWindow(vin,FRONTRIGHTDOOR,"FrontRightDoor",doors["data"]["frontRightDoorOpen"]["value"])
+        UpdateDoorOrWindow(vin,REARLEFTDOOR,"RearLeftDoor",doors["data"]["rearLeftDoorOpen"]["value"])
+        UpdateDoorOrWindow(vin,REARRIGHTDOOR,"RearRightDoor",doors["data"]["rearRightDoorOpen"]["value"])
         UpdateLock(vin,CARLOCKED,"CarLocked",doors["data"]["carLocked"]["value"])
     else:
         Error("Updating Doors failed")
@@ -353,10 +353,10 @@ def GetDoorWindowAndLockStatus():
     windows=VolvoAPI("https://api.volvocars.com/connected-vehicle/v1/vehicles/"+vin+"/windows","application/vnd.volvocars.api.connected-vehicle.vehicledata.v1+json")
     if windows:
         Debug(json.dumps(windows))
-        UpdateDoorOrWindow(vin,FRONTLEFTWINDOW,"FrontLeftWindow",windows["data"]["frontLeft"]["value"])
-        UpdateDoorOrWindow(vin,FRONTRIGHTWINDOW,"FrontRightWindow",windows["data"]["frontRight"]["value"])
-        UpdateDoorOrWindow(vin,REARLEFTWINDOW,"RearLeftWindow",windows["data"]["rearLeft"]["value"])
-        UpdateDoorOrWindow(vin,REARRIGHTWINDOW,"RearRightWindow",windows["data"]["rearRight"]["value"])
+        UpdateDoorOrWindow(vin,FRONTLEFTWINDOW,"FrontLeftWindow",windows["data"]["frontLeftWindowOpen"]["value"])
+        UpdateDoorOrWindow(vin,FRONTRIGHTWINDOW,"FrontRightWindow",windows["data"]["frontRightWindowOpen"]["value"])
+        UpdateDoorOrWindow(vin,REARLEFTWINDOW,"RearLeftWindow",windows["data"]["rearLeftWindowOpen"]["value"])
+        UpdateDoorOrWindow(vin,REARRIGHTWINDOW,"RearRightWindow",windows["data"]["rearRightWindowOpen"]["value"])
     else:
         Error("Updating Windows failed")
 
