@@ -486,13 +486,11 @@ def HandleClimatizationCommand(vin,idx,command):
 
     if refresh_token:
         url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/climatization-start'
-        ct = "application/vnd.volvocars.api.connected-vehicle.climatizationstart.v2+json"
         climatizationstoptimestamp=time.time()+30*60  #make sure we switch off after 30 mins
         nv=1
         
         if command=='Off':
             url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/climatization-stop'
-            ct = "application/vnd.volvocars.api.connected-vehicle.climatizationstop.v2+json"
             nv=0
         
 
@@ -502,7 +500,7 @@ def HandleClimatizationCommand(vin,idx,command):
             status = requests.post(
                 url,
                 headers= {
-                    "Content-Type": ct,
+                    "Content-Type": "application/json",
                     "vcc-api-key": vccapikey,
                     "Authorization": "Bearer " + access_token
                 }
@@ -534,12 +532,10 @@ def HandleLockCommand(vin,idx,command):
 
     if refresh_token:
         url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/lock'
-        ct = "application/vnd.volvocars.api.connected-vehicle.lock.v2+json"
         cmd = "LOCKED"
         
         if command=='Off':
             url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/unlock'
-            ct = "application/vnd.volvocars.api.connected-vehicle.unlock.v2+json"
             cmd = "UNLOCKED"
 
         try:
@@ -547,7 +543,7 @@ def HandleLockCommand(vin,idx,command):
             status = requests.post(
                 url,
                 headers= {
-                    "Content-Type": ct,
+                    "Content-Type": "application/json",
                     "vcc-api-key": vccapikey,
                     "Authorization": "Bearer " + access_token
                 }
