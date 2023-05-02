@@ -30,6 +30,7 @@
         <param field="Mode1" label="Primary VCC API Key" required="true"/>
         <param field="Mode2" label="update interval in secs" required="true" default="900"/>
         <param field="Mode3" label="VIN (optional)"/>
+        <param field="Mode5" label="ABRP apikey:token (optional)"/>
         <param field="Mode4" label="Battery Pakc Size (optional)" default="67"/>
         <param field="Mode6" label="Debug" width="150px">
             <options>
@@ -52,9 +53,12 @@ import DomoticzEx as Domoticz
 import requests
 import json
 import datetime
+from datetime import timezone
 import time
 
 #global vars
+abrp_api_key=None
+abrp_token=None
 vocuser=None
 vocpass=None
 vccapikey=None
@@ -478,6 +482,27 @@ def Heartbeat():
             GetDoorWindowAndLockStatus()
         else:
             Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
+        
+        #update ABRP SOC
+        if abrp_api_key and abrp_token:
+            try:
+                #get params
+                dt = datetime.datetime.now(timezone.utc)
+                utc_time = dt.replace(tzinfo=timezone.utc)
+                utc_timestamp = utc_time.timestamp()
+                chargelevel=Devices[vin].Units[BATTERYCHARGELEVEL].nValue
+
+                url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"soh":100,"is_charging":0}'
+                Debug("ABRP url = "+url)
+                response=requests.get(url)
+                Debug(response.text)
+
+            except requests.exceptions.RequestException as error:
+                Error("Error updating ABRP SOC")
+                Error(error)
+        else:
+            Debug("No ABRP token and/or apikey, ignoring")
+
     else:
         Debug("No vin, do nothing")
 
@@ -576,8 +601,10 @@ class BasePlugin:
         return
 
     def onStart(self):
-        global vocuser,vocpass,vccapikey,debugging,info,lastupdate,updateinterval,expirytimestamp
-
+        global vocuser,vocpass,vccapikey,debugging,info,lastupdate,updateinterval,expirytimestamp,abrp_api_key,abrp_token
+        Debug("OnStart called")
+        
+        #read params
         if Parameters["Mode6"] in {"-1","126"}:
             Domoticz.Debugging(int(Parameters["Mode6"]))
             DumpConfigToLog()
@@ -592,9 +619,16 @@ class BasePlugin:
             info=True
 
 
-        Debug("OnStart called")
-
         #initiate vars
+        values=Parameters["Mode5"].split(":")
+        if len(values)==2:
+            Debug("We have a valid ABRP config")
+            abrp_api_key=values[0]
+            abrp_token=values[1]
+            Debug("ABRP api key="+abrp_api_key+", token="+abrp_token)
+        else:
+            Debug("len="+str(len(values)))
+
         vocuser=Parameters["Username"]
         vocpass=Parameters["Password"]
         vccapikey=Parameters["Mode1"]
