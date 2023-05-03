@@ -93,6 +93,7 @@ FRONTRIGHTWINDOW=16
 REARLEFTWINDOW=17
 REARRIGHTWINDOW=18
 ESTIMATEDEFFICIENCY=19
+ABRPSYNC=20
 
 def Debug(text):
     if debugging:
@@ -485,21 +486,39 @@ def Heartbeat():
         
         #update ABRP SOC
         if abrp_api_key and abrp_token:
-            try:
-                #get params
-                dt = datetime.datetime.now(timezone.utc)
-                utc_time = dt.replace(tzinfo=timezone.utc)
-                utc_timestamp = utc_time.timestamp()
-                chargelevel=Devices[vin].Units[BATTERYCHARGELEVEL].nValue
+            #Check if synmc device exists.
+            if (not vin in Devices) or (not ABRPSYNC in Devices[vin].Units):
+                UpdateSwitch(vin,ABRPSYNC,"Connect to ABRP",1,"On")
 
-                url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"soh":100,"is_charging":0}'
-                Debug("ABRP url = "+url)
-                response=requests.get(url)
-                Debug(response.text)
+            #Check if we have to sync
+            if Devices[vin].Units[ABRPSYNC].nValue==1:
+                try:
+                    #get params
+                    dt = datetime.datetime.now(timezone.utc)
+                    utc_time = dt.replace(tzinfo=timezone.utc)
+                    utc_timestamp = utc_time.timestamp()
+                    chargelevel=Devices[vin].Units[BATTERYCHARGELEVEL].nValue
+                    is_charging=0
+                    is_dcfc=0
+                    #check if we are charging (and if so whiuch type)
+                    if Devices[vin].Units[CHARGINGSYSTEMSTATUS].nValue==10:
+                        if Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==10:
+                            is_charging=1
+                        elif Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==20:
+                            is_charging=1
+                            is_dcfc=1
 
-            except requests.exceptions.RequestException as error:
-                Error("Error updating ABRP SOC")
-                Error(error)
+                    #url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":0}'
+                    url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":'+str(is_charging)+',"is_dcfc":'+str(is_dcfc)+'}'
+                    Debug("ABRP url = "+url)
+                    response=requests.get(url)
+                    Debug(response.text)
+
+                except requests.exceptions.RequestException as error:
+                    Error("Error updating ABRP SOC")
+                    Error(error)
+            else:
+                Debug("ABRPSyncing switched off")
         else:
             Debug("No ABRP token and/or apikey, ignoring")
 
@@ -661,9 +680,13 @@ class BasePlugin:
         elif Unit==CARLOCKED:
             Debug("Handle CarLock")
             HandleLockCommand(DeviceID,Unit,Command)
-
+        elif Unit==ABRPSYNC:
+            if Command=='On':
+                UpdateSwitch(vin,ABRPSYNC,"ABRPSYNC",1,Command)
+            else:
+                UpdateSwitch(vin,ABRPSYNC,"ABRPSYNC",0,Command)
         else:
-            Debug("handle the rest")
+            Debug("uknown command")
 
     def onNotification(self, Name, Subject, Text, Status, Priority, Sound, ImageFile):
         Debug("Notification: " + Name + "," + Subject + "," + Text + "," + Status + "," + str(Priority) + "," + Sound + "," + ImageFile)

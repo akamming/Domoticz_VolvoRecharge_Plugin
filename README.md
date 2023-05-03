@@ -6,6 +6,7 @@ domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your
 - recharge status (https://developer.volvocars.com/apis/energy/endpoints/recharge-status/)
 - doors, windows and lock status, including locking and unlocking of doors (https://developer.volvocars.com/apis/connected-vehicle/endpoints/doors-windows-locks/)
 - start/stop climatisation (https://developer.volvocars.com/apis/connected-vehicle/endpoints/climate/)
+- syncs SOC and charging status to ABRP
 
 ## Devices
 pls look at the above links to API for device descriptions
@@ -24,6 +25,7 @@ This last switch has a very simple implementatiation. If you start climatisation
    - Set a VIN if you connected more than one car to your volvo account. If empty the plugin will use the 1st car attached to your Volvo account
    - Set an update interval. If you don't pay Volvo for the API, you're only allowed to do 10.000 calls per day.. so make sure not to set the update interval too low. The plugin does 4 calls on every interval.
    - Set your battery pack size (causes the plugin to calculate the average efficiency of your car in kWh/100km based on remaing battery and range estimate)
+   - Set API_KEY and token of ABRP (format api_key:token) Token can be obtained from ABRP app (selecting Generic method at "live data" will give you the token). API_Key can bet obtained by contacting ABRP developer (see instructions at this link:  https://documenter.getpostman.com/view/7396339/SWTK5a8w )
 
 ## Security
 This is a normal domoticz plugin, so as secure as every other one. However since with this plugin you can lock and unlock your car, check your if your domoticz install, especially if it's connected to the internet, if it is really secure.You don't want someone to hack your domoticz and then also have access to your car 
