@@ -94,6 +94,7 @@ REARLEFTWINDOW=17
 REARRIGHTWINDOW=18
 ESTIMATEDEFFICIENCY=19
 ABRPSYNC=20
+ODOMETER=21
 
 def Debug(text):
     if debugging:
@@ -338,6 +339,24 @@ def UpdateLock(vin,idx,name,value):
     Devices[vin].Units[idx].Update(Log=True)
     Domoticz.Log("Door Lock ("+Devices[vin].Units[idx].Name+")")
 
+def UpdateCounter(vn,idx,name,value):
+    if (not vn in Devices) or (not idx in Devices[vn].Units):
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=113, Switchtype=3, DeviceID=vin, Options="{'ValueQuantity': 'Distance','ValueUnits': 'km'}",Used=True).Create()
+    Devices[vin].Units[idx].nValue = value 
+    Devices[vin].Units[idx].sValue = value
+    Devices[vin].Units[idx].Update(Log=True)
+    Domoticz.Log("Counter ("+Devices[vin].Units[idx].Name+")")
+
+def GetOdoMeter():
+    Debug("GetOdoMeter() Called")
+    
+    odometer=VolvoAPI("https://api.volvocars.com/connected-vehicle/v1/vehicles/"+vin+"/odometer","application/vnd.volvocars.api.connected-vehicle.vehicledata.v1+json")
+    if odometer:
+        Debug(json.dumps(odometer))
+        value=int(odometer["data"]["odometer"]["value"])*10
+        Debug("odometer="+str(value))
+        UpdateCounter(vin,ODOMETER,"Odometer",value)
+
 
 def GetDoorWindowAndLockStatus():
     Debug("GetDoorAndLockStatus() Called")
@@ -514,6 +533,7 @@ def Heartbeat():
             lastupdate=time.time()
             GetRechargeStatus()
             GetDoorWindowAndLockStatus()
+            GetOdoMeter()
         else:
             Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
         
