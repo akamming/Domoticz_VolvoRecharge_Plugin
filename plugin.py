@@ -450,6 +450,39 @@ def GetRechargeStatus():
         Error("Updating Recharge Status failed")
 
 
+
+def UpdateABRP():
+    try:
+        #get params
+        dt = datetime.datetime.now(timezone.utc)
+        utc_time = dt.replace(tzinfo=timezone.utc)
+        utc_timestamp = utc_time.timestamp()
+        chargelevel=Devices[vin].Units[BATTERYCHARGELEVEL].nValue
+        is_charging=0
+        is_dcfc=0
+        #check if we are charging (and if so whiuch type)
+        if Devices[vin].Units[CHARGINGSYSTEMSTATUS].nValue==10:
+            if Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==10:
+                is_charging=1
+            elif Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==20:
+                is_charging=1
+                is_dcfc=1
+
+        #url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":0}'
+        url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":'+str(is_charging)+',"is_dcfc":'+str(is_dcfc)+'}'
+        Debug("ABRP url = "+url)
+        response=requests.get(url)
+        Debug(response.text)
+        if response.status_code==200 and response.json()["status"]=="ok":
+            Debug("ABRP call succeeded")
+        else:
+            Error("ABRP call failed")
+
+    except requests.exceptions.RequestException as error:
+        Error("Error updating ABRP SOC")
+        Error(error)
+
+
 def Heartbeat():
     global lastupdate
 
@@ -492,31 +525,7 @@ def Heartbeat():
 
             #Check if we have to sync
             if Devices[vin].Units[ABRPSYNC].nValue==1:
-                try:
-                    #get params
-                    dt = datetime.datetime.now(timezone.utc)
-                    utc_time = dt.replace(tzinfo=timezone.utc)
-                    utc_timestamp = utc_time.timestamp()
-                    chargelevel=Devices[vin].Units[BATTERYCHARGELEVEL].nValue
-                    is_charging=0
-                    is_dcfc=0
-                    #check if we are charging (and if so whiuch type)
-                    if Devices[vin].Units[CHARGINGSYSTEMSTATUS].nValue==10:
-                        if Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==10:
-                            is_charging=1
-                        elif Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==20:
-                            is_charging=1
-                            is_dcfc=1
-
-                    #url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":0}'
-                    url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":'+str(is_charging)+',"is_dcfc":'+str(is_dcfc)+'}'
-                    Debug("ABRP url = "+url)
-                    response=requests.get(url)
-                    Debug(response.text)
-
-                except requests.exceptions.RequestException as error:
-                    Error("Error updating ABRP SOC")
-                    Error(error)
+                UpdateABRP()
             else:
                 Debug("ABRPSyncing switched off")
         else:
