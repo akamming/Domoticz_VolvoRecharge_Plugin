@@ -473,13 +473,18 @@ def GetRechargeStatus():
 def UpdateABRP():
     try:
         #get params
+
+        #utc
         dt = datetime.datetime.now(timezone.utc)
         utc_time = dt.replace(tzinfo=timezone.utc)
         utc_timestamp = utc_time.timestamp()
+
+        #chargelevel
         chargelevel=Devices[vin].Units[BATTERYCHARGELEVEL].nValue
+        
+        #check if we are charging (dnd if so whiuch type)
         is_charging=0
         is_dcfc=0
-        #check if we are charging (and if so whiuch type)
         if Devices[vin].Units[CHARGINGSYSTEMSTATUS].nValue==10:
             if Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==10:
                 is_charging=1
@@ -487,8 +492,14 @@ def UpdateABRP():
                 is_charging=1
                 is_dcfc=1
 
+        #odometer
+        odometer=Devices[vin].Units[ODOMETER].nValue;
+
+        #Remaining
+        RemainingRange=Devices[vin].Units[REMAININGRANGE].nValue;
+
         #url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":0}'
-        url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":'+str(is_charging)+',"is_dcfc":'+str(is_dcfc)+'}'
+        url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":'+str(is_charging)+',"is_dcfc":'+str(is_dcfc)+',"est_battery_range":'+str(RemainingRange)+',"odometer":'+str(odometer)+'}'
         Debug("ABRP url = "+url)
         response=requests.get(url)
         Debug(response.text)
