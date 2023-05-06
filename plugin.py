@@ -339,9 +339,11 @@ def UpdateLock(vin,idx,name,value):
     Devices[vin].Units[idx].Update(Log=True)
     Domoticz.Log("Door Lock ("+Devices[vin].Units[idx].Name+")")
 
-def UpdateCounter(vn,idx,name,value):
+def UpdateOdoMeter(vn,idx,name,value):
+    options = {"ValueQuantity": "Custom", "ValueUnits": "km"}
     if (not vn in Devices) or (not idx in Devices[vn].Units):
-        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=113, Switchtype=3, DeviceID=vin, Options="{'ValueQuantity': 'Distance','ValueUnits': 'km'}",Used=True).Create()
+        #Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=113, Switchtype=3, DeviceID=vin, Options="{'ValueQuantity': 'Custom','ValueUnits': 'km'}",Used=True).Create()
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=113, Switchtype=3, DeviceID=vin, Options=options,Used=True).Create()
     Devices[vin].Units[idx].nValue = value 
     Devices[vin].Units[idx].sValue = value
     Devices[vin].Units[idx].Update(Log=True)
@@ -355,7 +357,7 @@ def GetOdoMeter():
         Debug(json.dumps(odometer))
         value=int(odometer["data"]["odometer"]["value"])*10
         Debug("odometer="+str(value))
-        UpdateCounter(vin,ODOMETER,"Odometer",value)
+        UpdateOdoMeter(vin,ODOMETER,"Odometer",value)
 
 
 def GetDoorWindowAndLockStatus():
