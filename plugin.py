@@ -96,6 +96,7 @@ ESTIMATEDEFFICIENCY=19
 ABRPSYNC=20
 ODOMETER=21
 TANKLID=22
+SUNROOF=23
 
 def Debug(text):
     if debugging:
@@ -377,13 +378,14 @@ def GetDoorWindowAndLockStatus():
     else:
         Error("Updating Doors failed")
 
-    windows=VolvoAPI("https://api.volvocars.com/connected-vehicle/v1/vehicles/"+vin+"/windows","application/vnd.volvocars.api.connected-vehicle.vehicledata.v1+json")
+    windows=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/windows","application/json")
     if windows:
         Debug(json.dumps(windows))
         UpdateDoorOrWindow(vin,FRONTLEFTWINDOW,"FrontLeftWindow",windows["data"]["frontLeftWindowOpen"]["value"])
         UpdateDoorOrWindow(vin,FRONTRIGHTWINDOW,"FrontRightWindow",windows["data"]["frontRightWindowOpen"]["value"])
         UpdateDoorOrWindow(vin,REARLEFTWINDOW,"RearLeftWindow",windows["data"]["rearLeftWindowOpen"]["value"])
         UpdateDoorOrWindow(vin,REARRIGHTWINDOW,"RearRightWindow",windows["data"]["rearRightWindowOpen"]["value"])
+        UpdateDoorOrWindow(vin,SUNROOF,"SunRoof",windows["data"]["sunRoofOpen"]["value"])
     else:
         Error("Updating Windows failed")
 
