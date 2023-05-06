@@ -212,38 +212,38 @@ def GetVin():
     try:
         vin=None
         vehicles = requests.get(
-            "https://api.volvocars.com/extended-vehicle/v1/vehicles",
+            "https://api.volvocars.com/connected-vehicle/v2/vehicles",
             headers= {
                 "accept": "application/json",
                 "vcc-api-key": vccapikey,
                 "Authorization": "Bearer " + access_token
             }
         )
-        Debug("\nResult:")
+        Debug("Succeeded")
         Debug(vehicles)
         vjson=vehicles.json()
 
         vehiclesjson = json.dumps(vehicles.json(), indent=4)
-        Debug("\nResult JSON:")
+        Debug("Result JSON:")
         Debug(vehiclesjson)
         if vehicles.status_code!=200:
-            Error("VolvoAPI failed calling https://api.volvocars.com/extended-vehicle/v1/vehicles, HTTP Statuscode "+str(vehicles.status_code))
+            Error("VolvoAPI failed calling https://api.volvocars.com/connected-vehicle/v2/vehicles, HTTP Statuscode "+str(vehicles.status_code))
             return None
         else:
-            if (("vehicles") in vjson.keys()) and (len(vjson["vehicles"])>0):
-                Info(str(len(vjson["vehicles"]))+" car(s) attached to your Volvo ID account: ")
-                for x in vjson["vehicles"]:
-                    Info("     "+x["id"])
+            if (("data") in vjson.keys()) and (len(vjson["data"])>0):
+                Info(str(len(vjson["data"]))+" car(s) attached to your Volvo ID account: ")
+                for x in vjson["data"]:
+                    Info("     "+x["vin"])
                 if len(Parameters["Mode3"])==0:
-                    vin = vjson["vehicles"][0]["id"]
+                    vin = vjson["data"][0]["vin"]
                     Info("No VIN in plugin config, selecting the 1st one ("+vin+") in your Volvo ID")
                 else:
-                    for x in vjson["vehicles"]:
-                        if x["id"]==Parameters["Mode3"]:
+                    for x in vjson["data"]:
+                        if x["vin"]==Parameters["Mode3"]:
                             vin=Parameters["Mode3"]
                             Info("Using configured VIN "+str(vin))
                         else:
-                            Debug("Ignoring VIN "+x["id"])
+                            Debug("Ignoring VIN "+x["vin"])
                     if vin==None:
                         Error("manually configured VIN "+Parameters["Mode3"]+" does not exist in your Volvo id account, check your config")
             else:
