@@ -342,7 +342,6 @@ def UpdateLock(vin,idx,name,value):
 def UpdateOdoMeter(vn,idx,name,value):
     options = {"ValueQuantity": "Custom", "ValueUnits": "km"}
     if (not vn in Devices) or (not idx in Devices[vn].Units):
-        #Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=113, Switchtype=3, DeviceID=vin, Options="{'ValueQuantity': 'Custom','ValueUnits': 'km'}",Used=True).Create()
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=113, Switchtype=3, DeviceID=vin, Options=options,Used=True).Create()
     Devices[vin].Units[idx].nValue = value 
     Devices[vin].Units[idx].sValue = value
