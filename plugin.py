@@ -95,6 +95,7 @@ REARRIGHTWINDOW=18
 ESTIMATEDEFFICIENCY=19
 ABRPSYNC=20
 ODOMETER=21
+TANKLID=22
 
 def Debug(text):
     if debugging:
@@ -351,7 +352,7 @@ def UpdateOdoMeter(vn,idx,name,value):
 def GetOdoMeter():
     Debug("GetOdoMeter() Called")
     
-    odometer=VolvoAPI("https://api.volvocars.com/connected-vehicle/v1/vehicles/"+vin+"/odometer","application/vnd.volvocars.api.connected-vehicle.vehicledata.v1+json")
+    odometer=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/odometer","application/json")
     if odometer:
         Debug(json.dumps(odometer))
         value=int(odometer["data"]["odometer"]["value"])*10
@@ -362,7 +363,7 @@ def GetOdoMeter():
 def GetDoorWindowAndLockStatus():
     Debug("GetDoorAndLockStatus() Called")
     
-    doors=VolvoAPI("https://api.volvocars.com/connected-vehicle/v1/vehicles/"+vin+"/doors","application/vnd.volvocars.api.connected-vehicle.vehicledata.v1+json")
+    doors=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/doors","application/json")
     if doors:
         Debug(json.dumps(doors))
         UpdateDoorOrWindow(vin,HOOD,"Hood",doors["data"]["hoodOpen"]["value"])
@@ -371,6 +372,7 @@ def GetDoorWindowAndLockStatus():
         UpdateDoorOrWindow(vin,FRONTRIGHTDOOR,"FrontRightDoor",doors["data"]["frontRightDoorOpen"]["value"])
         UpdateDoorOrWindow(vin,REARLEFTDOOR,"RearLeftDoor",doors["data"]["rearLeftDoorOpen"]["value"])
         UpdateDoorOrWindow(vin,REARRIGHTDOOR,"RearRightDoor",doors["data"]["rearRightDoorOpen"]["value"])
+        UpdateDoorOrWindow(vin,TANKLID,"TankLid",doors["data"]["tankLidOpen"]["value"])
         UpdateLock(vin,CARLOCKED,"CarLocked",doors["data"]["carLocked"]["value"])
     else:
         Error("Updating Doors failed")
