@@ -288,23 +288,32 @@ def VolvoAPI(url,mediatype):
 def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=tp, Subtype=subtp, DeviceID=vn, Options=options, Used=True).Create()
-    Devices[vin].Units[idx].nValue = nv
-    Devices[vin].Units[idx].sValue = sv
-    Devices[vin].Units[idx].Update(Log=True)
-    Domoticz.Log("General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
+    Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(nv)+","+str(sv))
+    if sv!=Devices[vin].Units[idx].sValue:
+        Devices[vin].Units[idx].nValue = nv
+        Devices[vin].Units[idx].sValue = sv
+        Devices[vin].Units[idx].Update(Log=True)
+        Domoticz.Log("General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
+    else:
+        Debug("not updating General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
 
 def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options, Used=True).Create()
-    Devices[vin].Units[idx].nValue = nv
-    Devices[vin].Units[idx].sValue = sv
-    Devices[vin].Units[idx].Update(Log=True)
-    Domoticz.Log("Selector Switch ("+Devices[vin].Units[idx].Name+")")
+    if nv!=Devices[vin].Units[idx].nValue:
+        Devices[vin].Units[idx].nValue = nv
+        Devices[vin].Units[idx].sValue = sv
+        Devices[vin].Units[idx].Update(Log=True)
+        Domoticz.Log("Selector Switch ("+Devices[vin].Units[idx].Name+")")
+    else:
+        Debug("Not Updating Selector Switch ("+Devices[vin].Units[idx].Name+")")
+
 
 def UpdateSwitch(vn,idx,name,nv,sv):
     Debug ("UpdateSwitch("+str(vn)+","+str(idx)+","+str(name)+","+str(nv)+","+str(sv)+" called")
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, DeviceID=vn, Used=True).Create()
+    Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(nv)+","+str(sv))
     Devices[vin].Units[idx].nValue = nv
     Devices[vin].Units[idx].sValue = sv
     Devices[vin].Units[idx].Update(Log=True)
@@ -315,40 +324,50 @@ def UpdateDoorOrWindow(vin,idx,name,value):
     Debug ("UpdateDoorOrWindow("+str(vin)+","+str(idx)+","+str(name)+","+str(value)+") called")
     if (not vin in Devices) or (not idx in Devices[vin].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=11, DeviceID=vin, Used=True).Create()
-
-    if value=="OPEN":
+    if value=="OPEN" and Devices[vin].Units[idx].nValue==0:
         Devices[vin].Units[idx].nValue = 1
         Devices[vin].Units[idx].sValue = "Open"
-    else:
+        Devices[vin].Units[idx].Update(Log=True)
+        Domoticz.Log("Door/Window Contact ("+Devices[vin].Units[idx].Name+")")
+    elif value=="CLOSED" and Devices[vin].Units[idx].nValue==1:
         Devices[vin].Units[idx].nValue = 0
         Devices[vin].Units[idx].sValue = "Closed"
+        Devices[vin].Units[idx].Update(Log=True)
+        Domoticz.Log("Door/Window Contact ("+Devices[vin].Units[idx].Name+")")
+    else:
+        Debug("Door/Windows status unchanged not updating "+Devices[vin].Units[idx].Name)
     
-    Devices[vin].Units[idx].Update(Log=True)
-    Domoticz.Log("Door Contact ("+Devices[vin].Units[idx].Name+")")
 
 def UpdateLock(vin,idx,name,value):
     Debug ("UpdateLock("+str(vin)+","+str(idx)+","+str(name)+","+str(value)+") called")
     if (not vin in Devices) or (not idx in Devices[vin].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=19, DeviceID=vin, Used=True).Create()
-
-    if value=="LOCKED":
+    if value=="LOCKED" and Devices[vin].Units[idx].nValue==0:
         Devices[vin].Units[idx].nValue = 1
         Devices[vin].Units[idx].sValue = "Locked"
-    else:
+        Devices[vin].Units[idx].Update(Log=True)
+        Domoticz.Log("Door Lock ("+Devices[vin].Units[idx].Name+")")
+    elif value=="UNLOCKED" and Devices[vin].Units[idx].nValue==1:
         Devices[vin].Units[idx].nValue = 0
         Devices[vin].Units[idx].sValue = "Unlocked"
+        Devices[vin].Units[idx].Update(Log=True)
+        Domoticz.Log("Door Lock ("+Devices[vin].Units[idx].Name+")")
+    else:
+        Debug("Lock status unchanged, not updating "+Devices[vin].Units[idx].Name)
     
-    Devices[vin].Units[idx].Update(Log=True)
-    Domoticz.Log("Door Lock ("+Devices[vin].Units[idx].Name+")")
 
 def UpdateOdoMeter(vn,idx,name,value):
     options = {"ValueQuantity": "Custom", "ValueUnits": "km"}
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=113, Switchtype=3, DeviceID=vin, Options=options,Used=True).Create()
-    Devices[vin].Units[idx].nValue = value 
-    Devices[vin].Units[idx].sValue = value
-    Devices[vin].Units[idx].Update(Log=True)
-    Domoticz.Log("Counter ("+Devices[vin].Units[idx].Name+")")
+    Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(value))
+    if value!=Devices[vin].Units[idx].nValue:
+        Devices[vin].Units[idx].nValue = value 
+        Devices[vin].Units[idx].sValue = value
+        Devices[vin].Units[idx].Update(Log=True)
+        Domoticz.Log("Counter ("+Devices[vin].Units[idx].Name+")")
+    else:
+        Debug("not updating Counter ("+Devices[vin].Units[idx].Name+")")
 
 def GetOdoMeter():
     Debug("GetOdoMeter() Called")
