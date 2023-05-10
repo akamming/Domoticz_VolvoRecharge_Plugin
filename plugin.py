@@ -97,6 +97,10 @@ ABRPSYNC=20
 ODOMETER=21
 TANKLID=22
 SUNROOF=23
+FRONTRIGHTTYREPRESSURE=24
+FRONTLEFTTYREPRESSURE=25
+REARLEFTTYREPRESSURE=26
+REARRIGHTTYREPRESSURE=27
 
 def Debug(text):
     if debugging:
@@ -408,6 +412,48 @@ def GetDoorWindowAndLockStatus():
     else:
         Error("Updating Windows failed")
 
+def UpdateTyrePressure(status,idx,name):
+    #Calculate Charging Connect Status value
+    newValue=0
+    if status=="LOW":
+        newValue=0
+    elif status=="NORMAL":
+        newValue=10
+    elif status=="HIGH":
+        newValue=20
+    elif status=="LOWSOFT":
+        newValue=30
+    elif status=="LOWHARD":
+        newValue=40
+    elif status=="NOSENSOR":
+        newValue=50
+    elif status=="SYSTEMFAULT":
+        newValue=60
+    else:
+        newValue=70
+
+    #update selector switch for Charging Connection Status
+    options = {"LevelActions": "|||",
+              "LevelNames": "Low|Normal|High|LowSoft|LowHard|NoSensor|SystemFault|Unspecified",
+              "LevelOffHidden": "false",
+              "SelectorStyle": "1"}
+    UpdateSelectorSwitch(vin,idx,name,options,
+                 int(newValue),
+                 float(newValue))
+
+def GetTyreStatus():
+    Debug("GetTyreStatus() called")
+    TyreStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/tyres","application/json")
+    if TyreStatus:
+        Debug(json.dumps(TyreStatus))
+        UpdateTyrePressure(TyreStatus["data"]["frontRightTyrePressure"]["value"],FRONTRIGHTTYREPRESSURE,"FrontRightTyrePressure")
+        UpdateTyrePressure(TyreStatus["data"]["frontLeftTyrePressure"]["value"],FRONTLEFTTYREPRESSURE,"FrontLeftTyrePressure")
+        UpdateTyrePressure(TyreStatus["data"]["rearRightTyrePressure"]["value"],REARRIGHTTYREPRESSURE,"RearRightTyrePressure")
+        UpdateTyrePressure(TyreStatus["data"]["rearLeftTyrePressure"]["value"],REARLEFTTYREPRESSURE,"RearLeftTyrePressure")
+    else:
+        Error("Updating Tyre Status failed")
+
+
 def GetRechargeStatus():
     Debug("GetRechargeStatus() called")
     RechargeStatus=VolvoAPI("https://api.volvocars.com/energy/v1/vehicles/"+vin+"/recharge-status","application/vnd.volvocars.api.energy.vehicledata.v1+json")
@@ -569,6 +615,7 @@ def Heartbeat():
             GetRechargeStatus()
             GetDoorWindowAndLockStatus()
             GetOdoMeter()
+            GetTyreStatus()
         else:
             Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
         
