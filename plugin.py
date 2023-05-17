@@ -102,6 +102,9 @@ FRONTLEFTTYREPRESSURE=25
 REARLEFTTYREPRESSURE=26
 REARRIGHTTYREPRESSURE=27
 SERVICESTATUS=28
+ENGINEHOURSTOSERVICE=29
+KMTOSERVICE=30
+MONTHSTOSERVICE=31
 
 def Debug(text):
     if debugging:
@@ -294,7 +297,7 @@ def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=tp, Subtype=subtp, DeviceID=vn, Options=options, Used=True).Create()
     Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(nv)+","+str(sv))
-    if sv!=Devices[vin].Units[idx].sValue:
+    if str(sv)!=Devices[vin].Units[idx].sValue:
         Devices[vin].Units[idx].nValue = nv
         Devices[vin].Units[idx].sValue = sv
         Devices[vin].Units[idx].Update(Log=True)
@@ -459,6 +462,22 @@ def GetDiagnostics():
     Diagnostics=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/diagnostics","application/json")
     if Diagnostics:
         Debug(json.dumps(Diagnostics))
+        
+        #update engineHoursToService
+        UpdateSensor(vin,ENGINEHOURSTOSERVICE,"EngineHoursToService",243,31,{'Custom':'1;hrs'},
+                     int(Diagnostics["data"]["engineHoursToService"]["value"]),
+                     float(Diagnostics["data"]["engineHoursToService"]["value"]))
+
+        #update kmToService
+        UpdateSensor(vin,KMTOSERVICE,"KmToService",243,31,{'Custom':'1;hrs'},
+                     int(Diagnostics["data"]["kmToService"]["value"]),
+                     float(Diagnostics["data"]["kmToService"]["value"]))
+
+        #update monthsToService
+        UpdateSensor(vin,MONTHSTOSERVICE,"MonthsToService",243,31,{'Custom':'1;hrs'},
+                     int(Diagnostics["data"]["monthsToService"]["value"]),
+                     float(Diagnostics["data"]["monthsToService"]["value"]))
+
         #update selector switch for Charging Connection Status
         options = {"LevelActions": "|||",
                   "LevelNames": "Normal|AlmostTimeForService|TimeForService|TimeExceeded|Unspecified",
