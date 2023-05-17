@@ -101,6 +101,7 @@ FRONTRIGHTTYREPRESSURE=24
 FRONTLEFTTYREPRESSURE=25
 REARLEFTTYREPRESSURE=26
 REARRIGHTTYREPRESSURE=27
+SERVICESTATUS=28
 
 def Debug(text):
     if debugging:
@@ -453,6 +454,31 @@ def GetTyreStatus():
     else:
         Error("Updating Tyre Status failed")
 
+def GetDiagnostics():
+    Debug("GetDiagnostics() called")
+    Diagnostics=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/diagnostics","application/json")
+    if Diagnostics:
+        Debug(json.dumps(Diagnostics))
+        #update selector switch for Charging Connection Status
+        options = {"LevelActions": "|||",
+                  "LevelNames": "Normal|AlmostTimeForService|TimeForService|TimeExceeded|Unspecified",
+                  "LevelOffHidden": "false",
+                  "SelectorStyle": "1"}
+        status=Diagnostics["data"]["serviceStatus"]["value"]
+        newValue=0
+        if status=="NORMAL":
+            newValue=0
+        elif status=="ALMOST_TIME_FOR_SERVICE":
+            newValue=10
+        elif status=="TIME_FOR_SERVICE":
+            newValue=20
+        elif status=="TIME_EXCEEDED":
+            newValue=30
+        else:
+            newValue=40
+        UpdateSelectorSwitch(vin,SERVICESTATUS,"ServiceStatus",options, int(newValue), float(newValue)) 
+    else:
+        Error("Updating Diagnostics failed")
 
 def GetRechargeStatus():
     Debug("GetRechargeStatus() called")
@@ -616,6 +642,7 @@ def Heartbeat():
             GetDoorWindowAndLockStatus()
             GetOdoMeter()
             GetTyreStatus()
+            GetDiagnostics()
         else:
             Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
         
