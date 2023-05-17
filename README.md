@@ -3,7 +3,7 @@ domoticz plugin for Volvo Recharge Full EV vehicles
 
 domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your car sensors can be integrated into your home automation use cases.
 
-##Features
+## Features
 - recharge status (https://developer.volvocars.com/apis/energy/endpoints/recharge-status/)
 - doors, windows and lock status, including locking and unlocking of doors (https://developer.volvocars.com/apis/connected-vehicle/endpoints/doors-windows-locks/)
 - tyrepressure status (https://developer.volvocars.com/apis/connected-vehicle/endpoints/tyres/)
