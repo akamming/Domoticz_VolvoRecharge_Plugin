@@ -469,12 +469,12 @@ def GetDiagnostics():
                      float(Diagnostics["data"]["engineHoursToService"]["value"]))
 
         #update kmToService
-        UpdateSensor(vin,KMTOSERVICE,"KmToService",243,31,{'Custom':'1;hrs'},
+        UpdateSensor(vin,KMTOSERVICE,"KmToService",243,31,{'Custom':'1;km'},
                      int(Diagnostics["data"]["kmToService"]["value"]),
                      float(Diagnostics["data"]["kmToService"]["value"]))
 
         #update monthsToService
-        UpdateSensor(vin,MONTHSTOSERVICE,"MonthsToService",243,31,{'Custom':'1;hrs'},
+        UpdateSensor(vin,MONTHSTOSERVICE,"MonthsToService",243,31,{'Custom':'1;months'},
                      int(Diagnostics["data"]["monthsToService"]["value"]),
                      float(Diagnostics["data"]["monthsToService"]["value"]))
 
