@@ -483,7 +483,7 @@ def GetDiagnostics():
                   "LevelNames": "Normal|AlmostTimeForService|TimeForService|TimeExceeded|Unspecified",
                   "LevelOffHidden": "false",
                   "SelectorStyle": "1"}
-        status=Diagnostics["data"]["serviceStatus"]["value"]
+        status=Diagnostics["data"]["serviceWarningStatus"]["value"]
         newValue=0
         if status=="NORMAL":
             newValue=0
