@@ -73,6 +73,9 @@ info=False
 climatizationactionid=None
 climatizationstoptimestamp=time.time()
 
+#Constants
+TIMEOUT=10 #timeout for API requests
+
 #Device Numbers
 REMAININGRANGE=1
 FULLRANGE=2
@@ -136,7 +139,8 @@ def LoginToVOC():
                 'access_token_manager_id': 'JWTh4Yf0b',
                 'grant_type': 'password',
                 'scope': 'openid email profile care_by_volvo:financial_information:invoice:read care_by_volvo:financial_information:payment_method care_by_volvo:subscription:read customer:attributes customer:attributes:write order:attributes vehicle:attributes tsp_customer_api:all conve:brake_status conve:climatization_start_stop conve:command_accessibility conve:commands conve:diagnostics_engine_status conve:diagnostics_workshop conve:doors_status conve:engine_status conve:environment conve:fuel_status conve:honk_flash conve:lock conve:lock_status conve:navigation conve:odometer_status conve:trip_statistics conve:tyre_status conve:unlock conve:vehicle_relation conve:warnings conve:windows_status energy:battery_charge_level energy:charging_connection_status energy:charging_system_status energy:electric_range energy:estimated_charging_time energy:recharge_status vehicle:attributes'
-            }
+            },
+            timeout = TIMEOUT
         )
         if response.status_code!=200:
             Error("VolvoAPI failed calling https://volvoid.eu.volvocars.com/as/token.oauth2, HTTP Statuscode "+str(response.status_code))
@@ -184,7 +188,8 @@ def RefreshVOCToken():
                 'access_token_manager_id': 'JWTh4Yf0b',
                 'grant_type': 'refresh_token',
                 'refresh_token': refresh_token
-            }
+            }, 
+            timeout=TIMEOUT
         )
         if response.status_code!=200:
             Error("VolvoAPI failed calling https://volvoid.eu.volvocars.com/as/token.oauth2, HTTP Statuscode "+str(response.status_code))
@@ -225,7 +230,8 @@ def GetVin():
                 "accept": "application/json",
                 "vcc-api-key": vccapikey,
                 "Authorization": "Bearer " + access_token
-            }
+            },
+            timeout=TIMEOUT
         )
         Debug("Succeeded")
         Debug(vehicles)
@@ -273,7 +279,8 @@ def VolvoAPI(url,mediatype):
                 "accept": mediatype,
                 "vcc-api-key": vccapikey,
                 "Authorization": "Bearer " + access_token
-            }
+            },
+            timeout=TIMEOUT
         )
 
         Debug("\nResult:")
@@ -616,7 +623,7 @@ def UpdateABRP():
         #url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":0}'
         url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":'+str(is_charging)+',"is_dcfc":'+str(is_dcfc)+',"est_battery_range":'+str(RemainingRange)+',"odometer":'+str(odometer)+'}'
         Debug("ABRP url = "+url)
-        response=requests.get(url)
+        response=requests.get(url,timeout=TIMEOUT)
         Debug(response.text)
         if response.status_code==200 and response.json()["status"]=="ok":
             Debug("ABRP call succeeded")
