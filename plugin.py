@@ -711,7 +711,8 @@ def HandleClimatizationCommand(vin,idx,command):
                     "Content-Type": "application/json",
                     "vcc-api-key": vccapikey,
                     "Authorization": "Bearer " + access_token
-                }
+                },
+                timeout=TIMEOUT
             )
 
             Debug("\nResult:")
@@ -754,7 +755,8 @@ def HandleLockCommand(vin,idx,command):
                     "Content-Type": "application/json",
                     "vcc-api-key": vccapikey,
                     "Authorization": "Bearer " + access_token
-                }
+                },
+                timeout=TIMEOUT
             )
 
             Debug("\nResult:")
