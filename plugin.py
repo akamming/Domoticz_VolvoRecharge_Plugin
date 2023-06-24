@@ -55,6 +55,7 @@ import json
 import datetime
 from datetime import timezone
 import time
+from math import sin, cos, sqrt, atan2, radians
 
 #global vars
 abrp_api_key=None
@@ -108,6 +109,11 @@ SERVICESTATUS=28
 ENGINEHOURSTOSERVICE=29
 KMTOSERVICE=30
 MONTHSTOSERVICE=31
+LONGITUDE=32
+LATTITUDE=33
+ALTITUDE=34
+HEADING=35
+DISTANCE2HOME=36
 
 def Debug(text):
     if debugging:
@@ -590,12 +596,50 @@ def GetRechargeStatus():
     else:
         Error("Updating Recharge Status failed")
 
+def DistanceBetweenCoords(coords1,coords2):
+    # Approximate radius of earth in km
+    R = 6373.0
+
+    lat1 = radians(float(coords1[0]))
+    lon1 = radians(float(coords1[1]))
+    lat2 = radians(float(coords2[0]))
+    lon2 = radians(float(coords2[1]))
+
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+
+    a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+    distance = R * c
+
+    Debug=("Result: ", distance)
+    return distance
+
 def GetLocation():
     Debug("GetLocation() called")
     Location=VolvoAPI("https://api.volvocars.com/location/v1/vehicles/"+vin+"/location","application/json")
     if Location:
         Debug(json.dumps(Location))
-        #UpdateTyrePressure(TyreStatus["data"]["rearLeftTyrePressure"]["value"],REARLEFTTYREPRESSURE,"RearLeftTyrePressure")
+        Debug("Location is " + str(Location["data"]["geometry"]["coordinates"][0]))
+        UpdateSensor(vin,LONGITUDE,"Longitude",243,31,{'Custom':'1;lon'}, int(Location["data"]["geometry"]["coordinates"][0]), Location["data"]["geometry"]["coordinates"][0])
+        UpdateSensor(vin,LATTITUDE,"Lattitude",243,31,{'Custom':'1;lat'}, int(Location["data"]["geometry"]["coordinates"][1]), Location["data"]["geometry"]["coordinates"][1])
+        UpdateSensor(vin,ALTITUDE,"Altitude",243,31,{'Custom':'1;alt'}, int(Location["data"]["geometry"]["coordinates"][2]), Location["data"]["geometry"]["coordinates"][2])
+        UpdateSensor(vin,HEADING,"Heading",243,31,{'Custom':'1;degrees'}, int(Location["data"]["properties"]["heading"]), str(Location["data"]["properties"]["heading"]))
+        if len(Settings["Location"])>0:
+            Debug ( "Domoticz location is "+Settings["Location"])
+            DomoticzLocation=Settings["Location"].split(";")
+            if len(DomoticzLocation)==2:
+                VolvoLocation=(Location["data"]["geometry"]["coordinates"][1],Location["data"]["geometry"]["coordinates"][0])
+                Distance2Home=DistanceBetweenCoords(DomoticzLocation, VolvoLocation)
+                Debug("Distance to volvo is "+str(Distance2Home))
+                UpdateSensor(vin,DISTANCE2HOME,"Distance2Home",243,31,{'Custom':'1;km'}, int(Distance2Home), str(Distance2Home))
+            else:
+                Debug("Invalid location entered in domoticz config")
+        else:
+            Debug("No location entered in domoticz config")
+
+
     else:
         Error("GetLocation failed")
 
