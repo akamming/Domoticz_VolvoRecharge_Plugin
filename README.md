@@ -9,6 +9,7 @@ domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your
 - tyrepressure status (https://developer.volvocars.com/apis/connected-vehicle/endpoints/tyres/)
 - service status (https://developer.volvocars.com/apis/connected-vehicle/endpoints/diagnostics/#get-diagnostic-values)
 - start/stop climatisation (https://developer.volvocars.com/apis/connected-vehicle/endpoints/climate/)
+- Retrieve Vehicle location (https://developer.volvocars.com/apis/location/v1/endpoints/location/#get-location)
 - syncs SOC and charging status to ABRP (https://documenter.getpostman.com/view/7396339/SWTK5a8w)
 
 ## Devices
@@ -29,6 +30,7 @@ This last switch has a very simple implementatiation. If you start climatisation
    - Set an update interval. If you don't pay Volvo for the API, you're only allowed to do 10.000 calls per day.. so make sure not to set the update interval too low. The plugin does 4 calls on every interval.
    - Set your battery pack size (causes the plugin to calculate the average efficiency of your car in kWh/100km based on remaing battery and range estimate)
    - Set API_KEY and token of ABRP (format api_key:token) Token can be obtained from ABRP app (selecting Generic method at "live data" will give you the token). API_Key can bet obtained by contacting ABRP developer (see instructions at this link:  https://documenter.getpostman.com/view/7396339/SWTK5a8w )
+   - if in the domoticz settings the Longitude and Lattitude are correctly entered, the plugin will calculate the absolute distance to your car in km
 
 ## Security
 This is a normal domoticz plugin, so as secure as every other one. However since with this plugin you can lock and unlock your car, check your if your domoticz install, especially if it's connected to the internet, if it is really secure.You don't want someone to hack your domoticz and then also have access to your car 
@@ -44,8 +46,6 @@ If you tested with another vehicle, pls let me know by reporting an "issue" in t
 ## TODO
 I would really like to add API calls like
 - https://api.volvocars.com/connected-vehicle/v1/vehicles/{vin}/warnings
-- https://api.volvocars.com/connected-vehicle/v1/vehicles/{vin}/tyres
-- https://developer.volvocars.com/apis/connected-vehicle/endpoints/diagnostics/
-However i noticed that the output values are strings (e.g. fronleft.value for a tyre) which are different thant the docs. And since i cannot force to test all values on my car: If anyone can help me on correct documenation, let me know (by reporting an "issue") 
+However i noticed that the output values are strings which are different thant the docs. And since i cannot force to test all values on my car: If anyone can help me on correct documenation, let me know (by reporting an "issue") 
 
 Also could not get https://developer.volvocars.com/apis/connected-vehicle/endpoints/commands/#get-sent-command-details to work. The command give me a OK, but doesn't give the correct output... (need this for checking if climatisation is still running)
