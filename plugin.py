@@ -309,7 +309,7 @@ def VolvoAPI(url,mediatype):
 def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=tp, Subtype=subtp, DeviceID=vn, Options=options, Used=True).Create()
-    Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(nv)+","+str(sv))
+    Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(nv)+","+str(sv))
     if str(sv)!=Devices[vin].Units[idx].sValue:
         Devices[vin].Units[idx].nValue = nv
         Devices[vin].Units[idx].sValue = sv
