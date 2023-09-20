@@ -396,7 +396,7 @@ def GetOdoMeter():
     odometer=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/odometer","application/json")
     if odometer:
         Debug(json.dumps(odometer))
-        value=int(odometer["data"]["odometer"]["value"])*10
+        value=int(odometer["data"]["odometer"]["value"])
         Debug("odometer="+str(value))
         UpdateOdoMeter(vin,ODOMETER,"Odometer",value)
 
