@@ -720,7 +720,7 @@ def UpdateABRP():
         #Remaining
         RemainingRange=Devices[vin].Units[REMAININGRANGE].nValue;
 
-        #url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":0}'
+        #make the call
         url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":'+str(is_charging)+',"is_dcfc":'+str(is_dcfc)+',"est_battery_range":'+str(RemainingRange)+',"odometer":'+str(odometer)+'}'
         Debug("ABRP url = "+url)
         response=requests.get(url,timeout=TIMEOUT)
