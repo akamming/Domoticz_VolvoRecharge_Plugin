@@ -114,6 +114,9 @@ LATTITUDE=33
 ALTITUDE=34
 HEADING=35
 DISTANCE2HOME=36
+ENGINERUNNING=37
+OILLEVEL=38
+ENGINECOOLANTLEVEL=39
 
 def Debug(text):
     if debugging:
@@ -336,11 +339,14 @@ def UpdateSwitch(vn,idx,name,nv,sv):
     Debug ("UpdateSwitch("+str(vn)+","+str(idx)+","+str(name)+","+str(nv)+","+str(sv)+" called")
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, DeviceID=vn, Used=True).Create()
-    Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(nv)+","+str(sv))
-    Devices[vin].Units[idx].nValue = nv
-    Devices[vin].Units[idx].sValue = sv
-    Devices[vin].Units[idx].Update(Log=True)
-    Domoticz.Log("On/Off Switch ("+Devices[vin].Units[idx].Name+")")
+    if (Devices[vin].Units[idx].nValue==nv and Devices[vin].Units[idx].sValue==sv):
+        Debug("Switch status unchanged, not updating "+Devices[vin].Units[idx].Name)
+    else:
+        Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(nv)+","+str(sv))
+        Devices[vin].Units[idx].nValue = nv
+        Devices[vin].Units[idx].sValue = sv
+        Devices[vin].Units[idx].Update(Log=True)
+        Domoticz.Log("On/Off Switch ("+Devices[vin].Units[idx].Name+")")
 
 
 def UpdateDoorOrWindow(vin,idx,name,value):
@@ -471,6 +477,45 @@ def GetTyreStatus():
         UpdateTyrePressure(TyreStatus["data"]["rearLeftTyrePressure"]["value"],REARLEFTTYREPRESSURE,"RearLeftTyrePressure")
     else:
         Error("Updating Tyre Status failed")
+
+def UpdateLevel(status,idx,name):
+    #Calculate Charging Connect Status value
+    newValue=0
+    if status=="VERY_LOW":
+        newValue=0
+    elif status=="LOW":
+        newValue=10
+    elif status=="NORMAL":
+        newValue=20
+    elif status=="HIGH":
+        newValue=30
+    elif status=="VERY_HIGH":
+        newValue=40
+    else:
+        newValue=50
+
+    #update selector switch for Charging Connection Status
+    options = {"LevelActions": "|||",
+              "LevelNames": "Very Low|Low|Normal|High|Very High|Unspecified",
+              "LevelOffHidden": "false",
+              "SelectorStyle": "1"}
+    UpdateSelectorSwitch(vin,idx,name,options,
+                 int(newValue),
+                 float(newValue))
+
+def GetEngineStatus():
+    Debug("GetEngineStatus() called")
+    EngineStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/engine","application/json")
+    if EngineStatus:
+        Debug(json.dumps(EngineStatus))
+        if EngineStatus["data"]["engineRunning"]["value"]=="STOPPED":
+            UpdateSwitch(vin,ENGINERUNNING,"engineRunning",0,"Off")
+        else:
+            UpdateSwitch(vin,ENGINERUNNING,"engineRunning",1,"On")
+        UpdateLevel(EngineStatus["data"]["engineCoolantLevel"]["value"],ENGINECOOLANTLEVEL,"engineCoolantLevel")
+        UpdateLevel(EngineStatus["data"]["oilLevel"]["value"],OILLEVEL,"oilLevel")
+    else:
+        Error("Updating Engine Status failed")
 
 def GetDiagnostics():
     Debug("GetDiagnostics() called")
@@ -725,6 +770,7 @@ def Heartbeat():
             GetTyreStatus()
             GetDiagnostics()
             GetLocation()
+            GetEngineStatus()
         else:
             Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
         
@@ -875,7 +921,7 @@ class BasePlugin:
         vccapikey=Parameters["Mode1"]
         updateinterval=int(Parameters["Mode2"])
         if (updateinterval<70):
-            Info("Updateinterval too low, correcting to 60 secs")
+            Info("Updateinterval too low, correcting to 70 secs")
             updateinterval=69 # putting is too exact 60 might sometimes lead to update after 70 secs 
         lastupdate=time.time()-updateinterval-1 #force update
         expirytimestamp=time.time()-1 #force update
