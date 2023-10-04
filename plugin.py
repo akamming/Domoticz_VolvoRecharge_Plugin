@@ -150,6 +150,7 @@ def LoginToVOC():
         )
         if response.status_code!=200:
             Error("VolvoAPI failed calling https://volvoid.eu.volvocars.com/as/token.oauth2, HTTP Statuscode "+str(response.status_code))
+            Error("Response: "+str(response.json()))
             access_token=None
             refresh_token=None
         else:
@@ -203,7 +204,7 @@ def RefreshVOCToken():
             refresh_token=None
         else:
             Info("Refreshed token successful!")
-            Debug(response.json())
+            Debug("Volvo responded: "+str(response.json()))
 
             #retrieve tokens
             access_token = response.json()['access_token']
@@ -293,6 +294,7 @@ def VolvoAPI(url,mediatype):
         Debug(status)
         if status.status_code!=200:
             Error("VolvoAPI failed calling "+url+", HTTP Statuscode "+str(status.status_code))
+            Error("Reponse: "+str(status.json()))
             return None
         else:
             sjson=status.json()
