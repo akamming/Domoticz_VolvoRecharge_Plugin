@@ -1,4 +1,4 @@
-# Domoticz VolvoRechargexi Plugin
+# Domoticz VolvoRecharge Plugin
 domoticz plugin for Volvo Recharge Full EV vehicles
 
 domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your car sensors can be integrated into your home automation use cases.
