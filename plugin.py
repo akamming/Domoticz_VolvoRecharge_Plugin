@@ -177,7 +177,7 @@ def LoginToVOC():
             except ValueError as exc:
                 Error("Login Failed: unable to process json response from https://volvoid.eu.volvocars.com/as/token.oauth2 : "+str(exc))
 
-    except requests.exceptions.RequestException as error:
+    except Exception as error:
         Error("Login failed, check internet connection:")
         Error(error)
 
@@ -214,7 +214,7 @@ def RefreshVOCToken():
             refresh_token = response.json()['refresh_token']
             expirytimestamp=time.time()+response.json()['expires_in']
 
-    except requests.exceptions.RequestException as error:
+    except Exception as error:
         Error("Refresh failed:")
         Error(error)
 
@@ -274,7 +274,7 @@ def GetVin():
                 Error ("no cars configured for this volvo id")
                 vin=None
 
-    except requests.exceptions.RequestException as error:
+    except Exception as error:
         Debug("Get vehicles failed:")
         Debug(error)
         vin=None
@@ -306,7 +306,7 @@ def VolvoAPI(url,mediatype):
             Debug(sjson)
             return status.json()
 
-    except requests.exceptions.RequestException as error:
+    except Exception as error:
         Error("VolvoAPI failed calling "+url+" with mediatype "+mediatype+" failed")
         Error(error)
         return None
@@ -730,7 +730,7 @@ def UpdateABRP():
         else:
             Error("ABRP call failed")
 
-    except requests.exceptions.RequestException as error:
+    except Exception as error:
         Error("Error updating ABRP SOC")
         Error(error)
 
@@ -833,7 +833,10 @@ def HandleClimatizationCommand(vin,idx,command):
             else:
                 Error("climatizatation did not start/stop, webserver returned "+status.json()["status"])
 
-        except requests.exceptions.RequestException as error:
+        #except requests.exceptions.RequestException as error:
+        #    Error("handleclimatization command failed:")
+        #    Error(error)
+        except Exception as error:
             Error("handleclimatization command failed:")
             Error(error)
 
