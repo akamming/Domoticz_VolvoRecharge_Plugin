@@ -415,25 +415,25 @@ def GetDoorWindowAndLockStatus():
     doors=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/doors","application/json")
     if doors:
         Debug(json.dumps(doors))
-        UpdateDoorOrWindow(vin,HOOD,"Hood",doors["data"]["hoodOpen"]["value"])
-        UpdateDoorOrWindow(vin,TAILGATE,"Tailgate",doors["data"]["tailGateOpen"]["value"])
-        UpdateDoorOrWindow(vin,FRONTLEFTDOOR,"FrontLeftDoor",doors["data"]["frontLeftDoorOpen"]["value"])
-        UpdateDoorOrWindow(vin,FRONTRIGHTDOOR,"FrontRightDoor",doors["data"]["frontRightDoorOpen"]["value"])
-        UpdateDoorOrWindow(vin,REARLEFTDOOR,"RearLeftDoor",doors["data"]["rearLeftDoorOpen"]["value"])
-        UpdateDoorOrWindow(vin,REARRIGHTDOOR,"RearRightDoor",doors["data"]["rearRightDoorOpen"]["value"])
-        UpdateDoorOrWindow(vin,TANKLID,"TankLid",doors["data"]["tankLidOpen"]["value"])
-        UpdateLock(vin,CARLOCKED,"CarLocked",doors["data"]["carLocked"]["value"])
+        UpdateDoorOrWindow(vin,HOOD,"Hood",doors["data"]["hood"]["value"])
+        UpdateDoorOrWindow(vin,TAILGATE,"Tailgate",doors["data"]["tailgate"]["value"])
+        UpdateDoorOrWindow(vin,FRONTLEFTDOOR,"FrontLeftDoor",doors["data"]["frontLeftDoor"]["value"])
+        UpdateDoorOrWindow(vin,FRONTRIGHTDOOR,"FrontRightDoor",doors["data"]["frontRightDoor"]["value"])
+        UpdateDoorOrWindow(vin,REARLEFTDOOR,"RearLeftDoor",doors["data"]["rearLeftDoor"]["value"])
+        UpdateDoorOrWindow(vin,REARRIGHTDOOR,"RearRightDoor",doors["data"]["rearRightDoor"]["value"])
+        UpdateDoorOrWindow(vin,TANKLID,"TankLid",doors["data"]["tankLid"]["value"])
+        UpdateLock(vin,CARLOCKED,"centralLock",doors["data"]["centralLock"]["value"])
     else:
         Error("Updating Doors failed")
 
     windows=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/windows","application/json")
     if windows:
         Debug(json.dumps(windows))
-        UpdateDoorOrWindow(vin,FRONTLEFTWINDOW,"FrontLeftWindow",windows["data"]["frontLeftWindowOpen"]["value"])
-        UpdateDoorOrWindow(vin,FRONTRIGHTWINDOW,"FrontRightWindow",windows["data"]["frontRightWindowOpen"]["value"])
-        UpdateDoorOrWindow(vin,REARLEFTWINDOW,"RearLeftWindow",windows["data"]["rearLeftWindowOpen"]["value"])
-        UpdateDoorOrWindow(vin,REARRIGHTWINDOW,"RearRightWindow",windows["data"]["rearRightWindowOpen"]["value"])
-        UpdateDoorOrWindow(vin,SUNROOF,"SunRoof",windows["data"]["sunRoofOpen"]["value"])
+        UpdateDoorOrWindow(vin,FRONTLEFTWINDOW,"FrontLeftWindow",windows["data"]["frontLeftWindow"]["value"])
+        UpdateDoorOrWindow(vin,FRONTRIGHTWINDOW,"FrontRightWindow",windows["data"]["frontRightWindow"]["value"])
+        UpdateDoorOrWindow(vin,REARLEFTWINDOW,"RearLeftWindow",windows["data"]["rearLeftWindow"]["value"])
+        UpdateDoorOrWindow(vin,REARRIGHTWINDOW,"RearRightWindow",windows["data"]["rearRightWindow"]["value"])
+        UpdateDoorOrWindow(vin,SUNROOF,"SunRoof",windows["data"]["sunroof"]["value"])
     else:
         Error("Updating Windows failed")
 
@@ -471,10 +471,10 @@ def GetTyreStatus():
     TyreStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/tyres","application/json")
     if TyreStatus:
         Debug(json.dumps(TyreStatus))
-        UpdateTyrePressure(TyreStatus["data"]["frontRightTyrePressure"]["value"],FRONTRIGHTTYREPRESSURE,"FrontRightTyrePressure")
-        UpdateTyrePressure(TyreStatus["data"]["frontLeftTyrePressure"]["value"],FRONTLEFTTYREPRESSURE,"FrontLeftTyrePressure")
-        UpdateTyrePressure(TyreStatus["data"]["rearRightTyrePressure"]["value"],REARRIGHTTYREPRESSURE,"RearRightTyrePressure")
-        UpdateTyrePressure(TyreStatus["data"]["rearLeftTyrePressure"]["value"],REARLEFTTYREPRESSURE,"RearLeftTyrePressure")
+        UpdateTyrePressure(TyreStatus["data"]["frontRight"]["value"],FRONTRIGHTTYREPRESSURE,"FrontRightTyrePressure")
+        UpdateTyrePressure(TyreStatus["data"]["frontLeft"]["value"],FRONTLEFTTYREPRESSURE,"FrontLeftTyrePressure")
+        UpdateTyrePressure(TyreStatus["data"]["rearRight"]["value"],REARRIGHTTYREPRESSURE,"RearRightTyrePressure")
+        UpdateTyrePressure(TyreStatus["data"]["rearLeft"]["value"],REARLEFTTYREPRESSURE,"RearLeftTyrePressure")
     else:
         Error("Updating Tyre Status failed")
 
@@ -505,17 +505,25 @@ def UpdateLevel(status,idx,name):
 
 def GetEngineStatus():
     Debug("GetEngineStatus() called")
+    EngineStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/engine-status","application/json")
+    if EngineStatus:
+        Debug(json.dumps(EngineStatus))
+        if EngineStatus["data"]["engineStatus"]["value"]=="STOPPED":
+            UpdateSwitch(vin,ENGINERUNNING,"engineStatus",0,"Off")
+        else:
+            UpdateSwitch(vin,ENGINERUNNING,"engineStatus",1,"On")
+    else:
+        Error("Updating Engine Status failed")
+
+def GetEngine():
+    Debug("GetEngine() called")
     EngineStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/engine","application/json")
     if EngineStatus:
         Debug(json.dumps(EngineStatus))
-        if EngineStatus["data"]["engineRunning"]["value"]=="STOPPED":
-            UpdateSwitch(vin,ENGINERUNNING,"engineRunning",0,"Off")
-        else:
-            UpdateSwitch(vin,ENGINERUNNING,"engineRunning",1,"On")
-        UpdateLevel(EngineStatus["data"]["engineCoolantLevel"]["value"],ENGINECOOLANTLEVEL,"engineCoolantLevel")
-        UpdateLevel(EngineStatus["data"]["oilLevel"]["value"],OILLEVEL,"oilLevel")
+        UpdateLevel(EngineStatus["data"]["engineCoolantLevelWarning"]["value"],ENGINECOOLANTLEVEL,"engineCoolantLevel")
+        UpdateLevel(EngineStatus["data"]["oilLevelWarning"]["value"],OILLEVEL,"oilLevel")
     else:
-        Error("Updating Engine Status failed")
+        Error("Updating Engine failed")
 
 def GetDiagnostics():
     Debug("GetDiagnostics() called")
@@ -530,20 +538,20 @@ def GetDiagnostics():
 
         #update kmToService
         UpdateSensor(vin,KMTOSERVICE,"KmToService",243,31,{'Custom':'1;km'},
-                     int(Diagnostics["data"]["kmToService"]["value"]),
-                     float(Diagnostics["data"]["kmToService"]["value"]))
+                     int(Diagnostics["data"]["distanceToService"]["value"]),
+                     float(Diagnostics["data"]["distanceToService"]["value"]))
 
         #update monthsToService
         UpdateSensor(vin,MONTHSTOSERVICE,"MonthsToService",243,31,{'Custom':'1;months'},
-                     int(Diagnostics["data"]["monthsToService"]["value"]),
-                     float(Diagnostics["data"]["monthsToService"]["value"]))
+                     int(Diagnostics["data"]["timeToService"]["value"]),
+                     float(Diagnostics["data"]["timeToService"]["value"]))
 
         #update selector switch for Charging Connection Status
         options = {"LevelActions": "|||",
                   "LevelNames": "Normal|AlmostTimeForService|TimeForService|TimeExceeded|Unspecified",
                   "LevelOffHidden": "false",
                   "SelectorStyle": "1"}
-        status=Diagnostics["data"]["serviceWarningStatus"]["value"]
+        status=Diagnostics["data"]["serviceWarning"]["value"]
         newValue=0
         if status=="NORMAL":
             newValue=0
@@ -770,7 +778,8 @@ def Heartbeat():
             GetTyreStatus()
             GetDiagnostics()
             GetLocation()
-            GetEngineStatus()
+            GetEngineStatus() 
+            GetEngine()
         else:
             Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
         
@@ -923,9 +932,9 @@ class BasePlugin:
         vocpass=Parameters["Password"]
         vccapikey=Parameters["Mode1"]
         updateinterval=int(Parameters["Mode2"])
-        if (updateinterval<70):
-            Info("Updateinterval too low, correcting to 70 secs")
-            updateinterval=69 # putting is too exact 60 might sometimes lead to update after 70 secs 
+        if (updateinterval<80):
+            Info("Updateinterval too low, correcting to 80 secs")
+            updateinterval=79 # putting is too exact 80 might sometimes lead to update after 90 secs 
         lastupdate=time.time()-updateinterval-1 #force update
         expirytimestamp=time.time()-1 #force update
 
