@@ -828,26 +828,21 @@ def HandleClimatizationCommand(vin,idx,command):
 
             Debug("\nResult:")
             Debug(status)
-            sjson=status.json()
 
             sjson = json.dumps(status.json(), indent=4)
             Debug("\nResult JSON:")
             Debug(sjson)
-            if status.json()["status"]==200:
-                climatizationoperationid=status.json()["operationId"]
+            if status.status_code==200:
                 if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
                     UpdateSwitch(vin,CLIMATIZATION,"Climatization",nv,command)
                 else:
                     Error("climatization did not start/stop, API returned code "+status.json()["data"]["invokeStatus"])
             else:
-                Error("climatizatation did not start/stop, webserver returned "+status.json()["status"])
+                Error("climatizatation did not start/stop, webserver returned "+str(status.status_code)+", result: "+sjson)
 
-        #except requests.exceptions.RequestException as error:
-        #    Error("handleclimatization command failed:")
-        #    Error(error)
-        except Exception as error:
+        except Exception as err:
             Error("handleclimatization command failed:")
-            Error(error)
+            Error(err)
 
 
 def HandleLockCommand(vin,idx,command):
@@ -880,7 +875,7 @@ def HandleLockCommand(vin,idx,command):
             sjson = json.dumps(status.json(), indent=4)
             Debug("\nResult JSON:")
             Debug(sjson)
-            if status.json()["status"]==200:
+            if status.status_code==200:
                 if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
                     UpdateLock(vin,CARLOCKED,"CarLocked",cmd)
                 else:
