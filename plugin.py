@@ -870,8 +870,6 @@ def HandleLockCommand(vin,idx,command):
 
             Debug("\nResult:")
             Debug(status)
-            sjson=status.json()
-
             sjson = json.dumps(status.json(), indent=4)
             Debug("\nResult JSON:")
             Debug(sjson)
@@ -881,9 +879,9 @@ def HandleLockCommand(vin,idx,command):
                 else:
                     Error("Car did not lock/unlock, API returned code "+status.json()["data"]["invokeStatus"])
             else:
-                Error("car did not lock/unlock, webserver returned "+str(status.json()["status"]))
+                Error("car did not lock/unlock, webserver returned "+str(status.status_code)+", result: "+sjson)
 
-        except requests.exceptions.RequestException as error:
+        except Exception as error:
             Error("lock/unlock command failed:")
             Error(error)
 
