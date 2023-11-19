@@ -442,7 +442,7 @@ def UpdateTyrePressure(status,idx,name):
     newValue=0
     if status=="LOW":
         newValue=0
-    elif status=="NORMAL":
+    elif status=="NO_WARNING":
         newValue=10
     elif status=="HIGH":
         newValue=20
@@ -485,7 +485,7 @@ def UpdateLevel(status,idx,name):
         newValue=0
     elif status=="LOW":
         newValue=10
-    elif status=="NORMAL":
+    elif status=="NO_WARNING":
         newValue=20
     elif status=="HIGH":
         newValue=30
@@ -899,7 +899,6 @@ class BasePlugin:
         #read params
         if Parameters["Mode6"] in {"-1","126"}:
             Domoticz.Debugging(int(Parameters["Mode6"]))
-            DumpConfigToLog()
             debugging=True
             info=True
         elif Parameters["Mode6"] in {"62"}:
@@ -910,6 +909,8 @@ class BasePlugin:
             debugging=False
             info=True
 
+        if debugging:
+            DumpConfigToLog()
 
         #initiate vars
         values=Parameters["Mode5"].split(":")
