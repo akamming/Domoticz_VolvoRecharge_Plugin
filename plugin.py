@@ -226,6 +226,37 @@ def CheckRefreshToken():
     else:
         LoginToVOC()
 
+def VolvoAPI(url,mediatype):
+    Debug("VolvoAPI("+url+","+mediatype+") called")
+    try:
+        status = requests.get(
+            url,
+            headers= {
+                "accept": mediatype,
+                "vcc-api-key": vccapikey,
+                "Authorization": "Bearer " + access_token
+            },
+            timeout=TIMEOUT
+        )
+
+        Debug("\nResult:")
+        Debug(status)
+        if status.status_code!=200:
+            Error("VolvoAPI failed calling "+url+", HTTP Statuscode "+str(status.status_code))
+            Error("Reponse: "+str(status.json()))
+            return None
+        else:
+            sjson=status.json()
+            sjson = json.dumps(status.json(), indent=4)
+            Debug("\nResult JSON:")
+            Debug(sjson)
+            return status.json()
+
+    except Exception as error:
+        Error("VolvoAPI failed calling "+url+" with mediatype "+mediatype+" failed")
+        Error(error)
+        return None
+
 def CheckVehicleDetails(vin):
     global batteryPackSize
 
@@ -317,37 +348,6 @@ def GetVin():
         Debug(error)
         vin=None
 
-
-def VolvoAPI(url,mediatype):
-    Debug("VolvoAPI("+url+","+mediatype+") called")
-    try:
-        status = requests.get(
-            url,
-            headers= {
-                "accept": mediatype,
-                "vcc-api-key": vccapikey,
-                "Authorization": "Bearer " + access_token
-            },
-            timeout=TIMEOUT
-        )
-
-        Debug("\nResult:")
-        Debug(status)
-        if status.status_code!=200:
-            Error("VolvoAPI failed calling "+url+", HTTP Statuscode "+str(status.status_code))
-            Error("Reponse: "+str(status.json()))
-            return None
-        else:
-            sjson=status.json()
-            sjson = json.dumps(status.json(), indent=4)
-            Debug("\nResult JSON:")
-            Debug(sjson)
-            return status.json()
-
-    except Exception as error:
-        Error("VolvoAPI failed calling "+url+" with mediatype "+mediatype+" failed")
-        Error(error)
-        return None
 
 def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
