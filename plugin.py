@@ -228,6 +228,42 @@ def CheckRefreshToken():
     else:
         LoginToVOC()
 
+def CheckVehicleDetails(vin):
+    global batteryPackSize
+
+    Debug("CheckVehicleDetails called")
+    try:
+        vehicle = requests.get(
+            "https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin,
+            headers= {
+                "accept": "application/json",
+                "vcc-api-key": vccapikey,
+                "Authorization": "Bearer " + access_token
+            },
+            timeout=TIMEOUT
+        )
+        Debug("Succeeded")
+        Debug(vehicle)
+        vjson=vehicle.json()
+
+        vehiclejson = json.dumps(vehicle.json(), indent=4)
+        Debug("Result JSON:")
+        Debug(vehiclejson)
+        if vehicle.status_code!=200:
+            Error("VolvoAPI failed calling https://api.volvocars.com/connected-vehicle/v2/vehicles, HTTP Statuscode "+str(vehicle.status_code))
+            return None
+        else:
+            if vjson["data"]["fuelType"]=="ELECTRIC":
+                Info("Setting BatteryCapacity to "+str(vjson["data"]["batteryCapacityKWH"]))
+                batteryPackSize=vjson["data"]["batteryCapacityKWH"]
+            else:
+                Debug("Selected vin is not an EV, not supported by this plugin")
+
+    except Exception as error:
+        Debug("CheckVehicleDEtails failed:")
+        Debug(error)
+        vin=None
+
 def GetVin():
     global vin
 
@@ -273,6 +309,10 @@ def GetVin():
             else:
                 Error ("no cars configured for this volvo id")
                 vin=None
+
+            if vin:
+                CheckVehicleDetails(vin)
+
 
     except Exception as error:
         Debug("Get vehicles failed:")
@@ -566,6 +606,8 @@ def GetDiagnostics():
         Error("Updating Diagnostics failed")
 
 def GetRechargeStatus():
+    global batteryPackSize
+
     Debug("GetRechargeStatus() called")
     RechargeStatus=VolvoAPI("https://api.volvocars.com/energy/v1/vehicles/"+vin+"/recharge-status","application/vnd.volvocars.api.energy.vehicledata.v1+json")
     if RechargeStatus:
@@ -589,13 +631,10 @@ def GetRechargeStatus():
                      "{:.1f}".format(CalculatedRange))
 
         #update EstimatedEfficiency Device
-        if (len(Parameters["Mode4"])>0) and (int(Parameters["Mode4"])>0):
-            estimatedEfficiency=(float(Parameters["Mode4"])*float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))  / float(RechargeStatus["data"]["electricRange"]["value"])
-            UpdateSensor(vin,ESTIMATEDEFFICIENCY,"estimatedEfficiency",243,31,{'Custom':'1;kWh/100km'},
-                         int(estimatedEfficiency),
-                         "{:.1f}".format(estimatedEfficiency))
-        else:
-            Info("No battery pack size specified in config, not calculating estimated efficiency")
+        estimatedEfficiency=(batteryPackSize*float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))  / float(RechargeStatus["data"]["electricRange"]["value"])
+        UpdateSensor(vin,ESTIMATEDEFFICIENCY,"estimatedEfficiency",243,31,{'Custom':'1;kWh/100km'},
+                     int(estimatedEfficiency),
+                     "{:.1f}".format(estimatedEfficiency))
 
 
         #update Remaining ChargingTime Device
