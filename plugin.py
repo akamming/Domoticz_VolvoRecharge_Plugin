@@ -299,35 +299,17 @@ def GetVin():
     Debug("GetVin called")
     try:
         vin=None
-        vehicles = requests.get(
-            "https://api.volvocars.com/connected-vehicle/v2/vehicles",
-            headers= {
-                "accept": "application/json",
-                "vcc-api-key": vccapikey,
-                "Authorization": "Bearer " + access_token
-            },
-            timeout=TIMEOUT
-        )
-        Debug("Succeeded")
-        Debug(vehicles)
-        vjson=vehicles.json()
-
-        vehiclesjson = json.dumps(vehicles.json(), indent=4)
-        Debug("Result JSON:")
-        Debug(vehiclesjson)
-        if vehicles.status_code!=200:
-            Error("VolvoAPI failed calling https://api.volvocars.com/connected-vehicle/v2/vehicles, HTTP Statuscode "+str(vehicles.status_code))
-            return None
-        else:
-            if (("data") in vjson.keys()) and (len(vjson["data"])>0):
-                Info(str(len(vjson["data"]))+" car(s) attached to your Volvo ID account: ")
-                for x in vjson["data"]:
+        vehicles = VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles", "application/json")
+        if vehicles:
+            if (("data") in vehicles.keys()) and (len(vehicles["data"])>0):
+                Info(str(len(vehicles["data"]))+" car(s) attached to your Volvo ID account: ")
+                for x in vehicles["data"]:
                     Info("     "+x["vin"])
                 if len(Parameters["Mode3"])==0:
-                    vin = vjson["data"][0]["vin"]
+                    vin = vehicles["data"][0]["vin"]
                     Info("No VIN in plugin config, selecting the 1st one ("+vin+") in your Volvo ID")
                 else:
-                    for x in vjson["data"]:
+                    for x in vehicles["data"]:
                         if x["vin"]==Parameters["Mode3"]:
                             vin=Parameters["Mode3"]
                             Info("Using configured VIN "+str(vin))
