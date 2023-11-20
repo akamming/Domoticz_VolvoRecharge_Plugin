@@ -548,21 +548,33 @@ def GetDiagnostics():
 
         #update selector switch for Charging Connection Status
         options = {"LevelActions": "|||",
-                  "LevelNames": "Normal|AlmostTimeForService|TimeForService|TimeExceeded|Unspecified",
+                  "LevelNames": "No Warning|Regular Maintenance Almost|Engine Hours Almost|Distance Driven Almost|Regular Maintenance|Engine Hours|Distance Driven|Regular Maintenance Overdue|Engine Hours Overdue|Distance Driven Overdue|Unknown",
                   "LevelOffHidden": "false",
                   "SelectorStyle": "1"}
         status=Diagnostics["data"]["serviceWarning"]["value"]
         newValue=0
-        if status=="NORMAL":
+        if status=="NO_WARNING":
             newValue=0
-        elif status=="ALMOST_TIME_FOR_SERVICE":
+        elif status=="REGULAR_MAINTENANCE_ALMOST_TIME_FOR_SERVICE":
             newValue=10
-        elif status=="TIME_FOR_SERVICE":
+        elif status=="REGULAR_MAINTENANCE_ALMOST_TIME_FOR_SERVICE":
             newValue=20
-        elif status=="TIME_EXCEEDED":
+        elif status=="DISTANCE_DRIVEN_ALMOST_TIME_FOR_SERVICE":
             newValue=30
-        else:
+        elif status=="REGULAR_MAINTENANCE_TIME_FOR_SERVICE":
             newValue=40
+        elif status=="REGULAR_MAINTENANCE_TIME_FOR_SERVICE":
+            newValue=50
+        elif status=="DISTANCE_DRIVEN_TIME_FOR_SERVICE":
+            newValue=60
+        elif status=="REGULAR_MAINTENANCE_OVERDUE_FOR_SERVICE":
+            newValue=70
+        elif status=="REGULAR_MAINTENANCE_OVERDUE_FOR_SERVICE":
+            newValue=80
+        elif status=="DISTANCE_DRIVEN_OVERDUE_FOR_SERVICE":
+            newValue=90
+        else:
+            newValue=100
         UpdateSelectorSwitch(vin,SERVICESTATUS,"ServiceStatus",options, int(newValue), float(newValue)) 
     else:
         Error("Updating Diagnostics failed")
