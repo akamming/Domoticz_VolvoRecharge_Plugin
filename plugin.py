@@ -262,29 +262,11 @@ def CheckVehicleDetails(vin):
 
     Debug("CheckVehicleDetails called")
     try:
-        vehicle = requests.get(
-            "https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin,
-            headers= {
-                "accept": "application/json",
-                "vcc-api-key": vccapikey,
-                "Authorization": "Bearer " + access_token
-            },
-            timeout=TIMEOUT
-        )
-        Debug("Succeeded")
-        Debug(vehicle)
-        vjson=vehicle.json()
-
-        vehiclejson = json.dumps(vehicle.json(), indent=4)
-        Debug("Result JSON:")
-        Debug(vehiclejson)
-        if vehicle.status_code!=200:
-            Error("VolvoAPI failed calling https://api.volvocars.com/connected-vehicle/v2/vehicles, HTTP Statuscode "+str(vehicle.status_code))
-            return None
-        else:
-            if vjson["data"]["fuelType"]=="ELECTRIC":
-                Info("Setting BatteryCapacity to "+str(vjson["data"]["batteryCapacityKWH"]))
-                batteryPackSize=vjson["data"]["batteryCapacityKWH"]
+        vehicle = VolvoAPI( "https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin, "application/json")
+        if vehicle:
+            if vehicle["data"]["fuelType"]=="ELECTRIC":
+                Info("Setting BatteryCapacity to "+str(vehicle["data"]["batteryCapacityKWH"]))
+                batteryPackSize=vehicle["data"]["batteryCapacityKWH"]
             else:
                 Debug("Selected vin is not an EV, not supported by this plugin")
 
