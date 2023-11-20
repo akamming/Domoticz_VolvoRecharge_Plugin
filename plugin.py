@@ -115,6 +115,7 @@ DISTANCE2HOME=36
 ENGINERUNNING=37
 OILLEVEL=38
 ENGINECOOLANTLEVEL=39
+WASHERFLUIDLEVEL=40
 
 def Debug(text):
     if debugging:
@@ -546,7 +547,7 @@ def GetDiagnostics():
                      int(Diagnostics["data"]["timeToService"]["value"]),
                      float(Diagnostics["data"]["timeToService"]["value"]))
 
-        #update selector switch for Charging Connection Status
+        #update selector switch for ServiceStatus
         options = {"LevelActions": "|||",
                   "LevelNames": "No Warning|Regular Maintenance Almost|Engine Hours Almost|Distance Driven Almost|Regular Maintenance|Engine Hours|Distance Driven|Regular Maintenance Overdue|Engine Hours Overdue|Distance Driven Overdue|Unknown",
                   "LevelOffHidden": "false",
@@ -576,6 +577,9 @@ def GetDiagnostics():
         else:
             newValue=100
         UpdateSelectorSwitch(vin,SERVICESTATUS,"ServiceStatus",options, int(newValue), float(newValue)) 
+        
+        #update selector switch for Washerfluidlevel
+        UpdateLevel(Diagnostics["data"]["washerFluidLevelWarning"]["value"],WASHERFLUIDLEVEL,"WasherFluidLevel")
     else:
         Error("Updating Diagnostics failed")
 
