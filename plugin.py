@@ -326,7 +326,7 @@ def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
 def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options, Used=True).Create()
-    if True or nv!=Devices[vin].Units[idx].nValue:
+    if nv!=Devices[vin].Units[idx].nValue:
         Devices[vin].Units[idx].nValue = nv
         Devices[vin].Units[idx].sValue = sv
         Devices[vin].Units[idx].Update(Log=True)
@@ -442,24 +442,21 @@ def UpdateTyrePressure(status,idx,name):
     newValue=0
     if status=="NO_WARNING":
         newValue=0
-    elif status=="NO_WARNING":
+    elif status=="VERY_LOW_PRESSURE":
         newValue=10
-    elif status=="HIGH":
+    elif status=="LOW_PRESSURE":
         newValue=20
-    elif status=="LOWSOFT":
+    elif status=="HIGH_PRESSURE":
         newValue=30
-    elif status=="LOWHARD":
+    elif status=="UNSPECIFIED":
         newValue=40
-    elif status=="NOSENSOR":
-        newValue=50
-    elif status=="SYSTEMFAULT":
-        newValue=60
     else:
-        newValue=70
+        Error("Unknown TyrePressureStatus")
+        newValue=50
 
     #update selector switch for Charging Connection Status
     options = {"LevelActions": "|||",
-              "LevelNames": "Low|Normal|High|LowSoft|LowHard|NoSensor|SystemFault|Unspecified",
+              "LevelNames": "No Warning|VeryLow|Low|High|Unspecified|Unknown",
               "LevelOffHidden": "false",
               "SelectorStyle": "1"}
     UpdateSelectorSwitch(vin,idx,name,options,
@@ -492,6 +489,7 @@ def UpdateLevel(status,idx,name):
     elif status=="UNSPECIFIED":
         newValue=40
     else:
+        Error("Uwknown Oil or Coolantlevel status")
         newValue=50
 
     #update selector switch for Charging Connection Status
