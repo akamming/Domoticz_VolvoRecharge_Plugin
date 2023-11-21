@@ -55,6 +55,10 @@ from datetime import timezone
 import time
 from math import sin, cos, sqrt, atan2, radians
 
+#Constants
+TIMEOUT=10 #timeout for API requests
+MINTIMEBETWEENLOGINATTEMPTS=600 #10 mins
+
 #global vars
 abrp_api_key=None
 abrp_token=None
@@ -71,9 +75,7 @@ debugging=False
 info=False
 climatizationactionid=None
 climatizationstoptimestamp=time.time()
-
-#Constants
-TIMEOUT=10 #timeout for API requests
+lastloginattempttimestamp=time.time()-MINTIMEBETWEENLOGINATTEMPTS
 
 #Device Numbers
 REMAININGRANGE=1
@@ -219,13 +221,20 @@ def RefreshVOCToken():
 
 
 def CheckRefreshToken():
+    global lastloginattempttimestamp
+
     if refresh_token:
         if expirytimestamp-time.time()<60:  #if expires in 60 seconds: refresh
             RefreshVOCToken()
         else:
             Debug("Not refreshing token, expires in "+str(expirytimestamp-time.time())+" seconds")
     else:
-        LoginToVOC()
+        if time.time()-lastloginattempttimestamp>=MINTIMEBETWEENLOGINATTEMPTS:
+            Debug("Nog logged in, attempting to login")
+            lastloginattempttimestamp=time.time()
+            LoginToVOC()
+        else:
+            Debug("Not logged in, retrying in "+str(MINTIMEBETWEENLOGINATTEMPTS-(time.time()-lastloginattempttimestamp))+" seconds")
 
 def VolvoAPI(url,mediatype):
     Debug("VolvoAPI("+url+","+mediatype+") called")
