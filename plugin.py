@@ -985,9 +985,9 @@ class BasePlugin:
         vocpass=Parameters["Password"]
         vccapikey=Parameters["Mode1"]
         updateinterval=int(Parameters["Mode2"])
-        if (updateinterval<80):
-            Info("Updateinterval too low, correcting to 80 secs")
-            updateinterval=79 # putting is too exact 80 might sometimes lead to update after 90 secs 
+        if (updateinterval<90):
+            Info("Updateinterval too low, correcting to 90 secs")
+            updateinterval=89 # putting is too exact 80 might sometimes lead to update after 100 secs 
         lastupdate=time.time()-updateinterval-1 #force update
         expirytimestamp=time.time()-1 #force update
 
