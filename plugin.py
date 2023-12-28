@@ -118,6 +118,7 @@ ENGINERUNNING=37
 OILLEVEL=38
 ENGINECOOLANTLEVEL=39
 WASHERFLUIDLEVEL=40
+BRAKELIGHTCENTERWARNING=41
 
 def Debug(text):
     if debugging:
@@ -279,7 +280,8 @@ def CheckVehicleDetails(vin):
                 Info("Setting BatteryCapacity to "+str(vehicle["data"]["batteryCapacityKWH"]))
                 batteryPackSize=vehicle["data"]["batteryCapacityKWH"]
             else:
-                Debug("Selected vin is not an EV, not supported by this plugin")
+                Error("Selected vin is not an EV, not supported by this plugin")
+                vin=None
 
     except Exception as error:
         Debug("CheckVehicleDEtails failed:")
@@ -485,6 +487,37 @@ def GetTyreStatus():
         UpdateTyrePressure(TyreStatus["data"]["frontLeft"]["value"],FRONTLEFTTYREPRESSURE,"FrontLeftTyrePressure")
         UpdateTyrePressure(TyreStatus["data"]["rearRight"]["value"],REARRIGHTTYREPRESSURE,"RearRightTyrePressure")
         UpdateTyrePressure(TyreStatus["data"]["rearLeft"]["value"],REARLEFTTYREPRESSURE,"RearLeftTyrePressure")
+    else:
+        Error("Updating Tyre Status failed")
+
+def UpdateWarning(status,idx,name):
+    #Calculate Charging Connect Status value
+    newValue=0
+    if status=="NO_WARNING":
+        newValue=0
+    elif status=="FAILURE":
+        newValue=10
+    elif status=="UNSPECIFIED":
+        newValue=20
+    else:
+        Error("Unknown Warning Value")
+        newValue=30
+
+    #update selector switch for Charging Connection Status
+    options = {"LevelActions": "|||",
+              "LevelNames": "No Warning|Failure|Unspecified|Unknown",
+              "LevelOffHidden": "false",
+              "SelectorStyle": "1"}
+    UpdateSelectorSwitch(vin,idx,name,options,
+                 int(newValue),
+                 float(newValue))
+
+def GetWarnings():
+    Debug("GetWarningStatus() called")
+    WarningStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/warnings","application/json")
+    if WarningStatus:
+        Debug(json.dumps(WarningStatus))
+        UpdateWarning(WarningStatus["data"]["brakeLightCenterWarning"]["value"],BRAKELIGHTCENTERWARNING,"BrakeLightCenterWarning")
     else:
         Error("Updating Tyre Status failed")
 
@@ -805,6 +838,7 @@ def Heartbeat():
             GetLocation()
             GetEngineStatus() 
             GetEngine()
+            GetWarnings()
         else:
             Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
         
