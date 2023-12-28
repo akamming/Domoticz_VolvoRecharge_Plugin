@@ -11,6 +11,8 @@ domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your
 - start/stop climatisation (https://developer.volvocars.com/apis/connected-vehicle/endpoints/climate/)
 - Retrieve Vehicle location (https://developer.volvocars.com/apis/location/v1/endpoints/location/#get-location)
 - syncs SOC and charging status to ABRP (https://documenter.getpostman.com/view/7396339/SWTK5a8w)
+- Retrieves Vehicle warnings (https://developer.volvocars.com/apis/connected-vehicle/v2/endpoints/warnings/)
+
 
 ## Devices
 pls look at the above links to API for device descriptions
@@ -45,8 +47,4 @@ Reported to work for
 If you tested with another vehicle, pls let me know by reporting an "issue" in this repository, i will add to the doc
 
 ## TODO
-I would really like to add API calls like
-- https://api.volvocars.com/connected-vehicle/v1/vehicles/{vin}/warnings
-However i noticed that the output values are strings which are different thant the docs. And since i cannot force to test all values on my car: If anyone can help me on correct documenation, let me know (by reporting an "issue") 
-
-Also could not get https://developer.volvocars.com/apis/connected-vehicle/endpoints/commands/#get-sent-command-details to work. The command give me a OK, but doesn't give the correct output... (need this for checking if climatisation is still running)
+out of ideas ;-)
