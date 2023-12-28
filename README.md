@@ -16,8 +16,8 @@ domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your
 pls look at the above links to API for device descriptions
 
 There are 2 devices which can send commands to the volvo
-- The CarLock device can lock and unlock your car
-- The climatisation device can start and stop navigation.  
+- The CarLock switch can lock and unlock your car
+- The climatization switch can start and stop climatizion.  
 This last switch has a very simple implementatiation. If you start climatisation the switch will go off after 30 mins. This is just a timer and during this 30 mins you can stop the climatisation which was started by the plugin. The switch will not detect climatisation status when it was started using the app or the car itself (Limitation by the API: There is no API to check for climatisation status..)
 
 ## Instructions
