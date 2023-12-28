@@ -119,6 +119,28 @@ OILLEVEL=38
 ENGINECOOLANTLEVEL=39
 WASHERFLUIDLEVEL=40
 BRAKELIGHTCENTERWARNING=41
+BRAKELIGHTLEFTWARNING=42
+BRAKELIGHTRIGHTWARNING=43
+FOGLIGHTFRONTWARNING=44
+FOGLIGHTREARWARNING=45
+POSITIONLIGHTFRONTLEFTWARNING=46
+POSITIONLIGHTFRONTRIGHTWARNING=47
+POSITIONLIGHTREARLEFTWARNING=48
+POSITIONLIGHTREARRIGHTWARNING=49
+HIGHBEAMLEFTWARNING=50
+HIGHBEAMRIGHTWARNING=51
+LOWBEAMLEFTWARNING=52
+LOWBEAMRIGHTWARNING=53
+DAYTIMERUNNINGLIGHTLEFTWARNING=54
+DAYTIMERUNNINGLIGHTRIGHTWARNING=55
+TURNINDICATIONFRONTLEFTWARNING=56
+TURNINDICATIONFRONTRIGHTWARNING=57
+TURNINDICATIONREARLEFTWARNING=58
+TURNINDICATIONREARRIGHTWARNING=59
+REGISTRATIONPLATELIGHTWARNING=60
+SIDEMARKLIGHTSWARNING=61
+HAZARDLIGHTSWARNING=62
+REVERSELIGHTSWARNING=63
 
 def Debug(text):
     if debugging:
@@ -518,6 +540,28 @@ def GetWarnings():
     if WarningStatus:
         Debug(json.dumps(WarningStatus))
         UpdateWarning(WarningStatus["data"]["brakeLightCenterWarning"]["value"],BRAKELIGHTCENTERWARNING,"BrakeLightCenterWarning")
+        UpdateWarning(WarningStatus["data"]["brakeLightLeftWarning"]["value"],BRAKELIGHTLEFTWARNING,"BrakeLightLeftWarning")
+        UpdateWarning(WarningStatus["data"]["brakeLightRightWarning"]["value"],BRAKELIGHTRIGHTWARNING,"BrakeLightRightWarning")
+        UpdateWarning(WarningStatus["data"]["fogLightFrontWarning"]["value"],FOGLIGHTFRONTWARNING,"fogLightFrontWarning")
+        UpdateWarning(WarningStatus["data"]["fogLightRearWarning"]["value"],FOGLIGHTREARWARNING,"fogLightRearWarning")
+        UpdateWarning(WarningStatus["data"]["positionLightFrontLeftWarning"]["value"],POSITIONLIGHTFRONTLEFTWARNING,"positionLightFrontLeftWarning")
+        UpdateWarning(WarningStatus["data"]["positionLightFrontRightWarning"]["value"],POSITIONLIGHTFRONTRIGHTWARNING,"positionLightFrontRightWarning")
+        UpdateWarning(WarningStatus["data"]["positionLightRearLeftWarning"]["value"],POSITIONLIGHTREARLEFTWARNING,"positionLightRearLeftWarning")
+        UpdateWarning(WarningStatus["data"]["positionLightRearRightWarning"]["value"],POSITIONLIGHTREARRIGHTWARNING,"positionLightRearRightWarning")
+        UpdateWarning(WarningStatus["data"]["highBeamLeftWarning"]["value"],HIGHBEAMLEFTWARNING,"highBeamLeftWarning")
+        UpdateWarning(WarningStatus["data"]["highBeamRightWarning"]["value"],HIGHBEAMRIGHTWARNING,"highBeamRightWarning")
+        UpdateWarning(WarningStatus["data"]["lowBeamLeftWarning"]["value"],LOWBEAMLEFTWARNING,"lowBeamLeftWarning")
+        UpdateWarning(WarningStatus["data"]["lowBeamRightWarning"]["value"],LOWBEAMRIGHTWARNING,"lowBeamRightWarning")
+        UpdateWarning(WarningStatus["data"]["daytimeRunningLightLeftWarning"]["value"],DAYTIMERUNNINGLIGHTLEFTWARNING,"daytimeRunningLightLeftWarning")
+        UpdateWarning(WarningStatus["data"]["daytimeRunningLightRightWarning"]["value"],DAYTIMERUNNINGLIGHTRIGHTWARNING,"daytimeRunningLightRightWarning")
+        UpdateWarning(WarningStatus["data"]["turnIndicationFrontLeftWarning"]["value"],TURNINDICATIONFRONTLEFTWARNING,"turnIndicationFrontLeftWarning")
+        UpdateWarning(WarningStatus["data"]["turnIndicationFrontRightWarning"]["value"],TURNINDICATIONFRONTRIGHTWARNING,"turnIndicationFrontRightWarning")
+        UpdateWarning(WarningStatus["data"]["turnIndicationRearLeftWarning"]["value"],TURNINDICATIONREARLEFTWARNING,"turnIndicationRearLeftWarning")
+        UpdateWarning(WarningStatus["data"]["turnIndicationRearRightWarning"]["value"],TURNINDICATIONREARRIGHTWARNING,"turnIndicationRearRightWarning")
+        UpdateWarning(WarningStatus["data"]["registrationPlateLightWarning"]["value"],REGISTRATIONPLATELIGHTWARNING,"registrationPlateLightWarning")
+        UpdateWarning(WarningStatus["data"]["sideMarkLightsWarning"]["value"],SIDEMARKLIGHTSWARNING,"sideMarkLightsWarning")
+        UpdateWarning(WarningStatus["data"]["hazardLightsWarning"]["value"],HAZARDLIGHTSWARNING,"hazardMarkLightsWarning")
+        UpdateWarning(WarningStatus["data"]["reverseLightsWarning"]["value"],REVERSELIGHTSWARNING,"reverseMarkLightsWarning")
     else:
         Error("Updating Tyre Status failed")
 
