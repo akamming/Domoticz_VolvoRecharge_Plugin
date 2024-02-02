@@ -350,10 +350,10 @@ def GetVin():
 
 def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
-        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=tp, Subtype=subtp, DeviceID=vn, Options=options, Used=True).Create()
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=tp, Subtype=subtp, DeviceID=vn, Options=options, Used=False).Create()
     Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(nv)+","+str(sv))
     if str(sv)!=Devices[vin].Units[idx].sValue:
-        Devices[vin].Units[idx].nValue = nv
+        Devices[vin].Units[idx].nValue = int(nv)
         Devices[vin].Units[idx].sValue = sv
         Devices[vin].Units[idx].Update(Log=True)
         Domoticz.Log("General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
@@ -362,7 +362,7 @@ def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
 
 def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
-        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options, Used=True).Create()
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options, Used=False).Create()
     if nv!=Devices[vin].Units[idx].nValue:
         Devices[vin].Units[idx].nValue = nv
         Devices[vin].Units[idx].sValue = sv
@@ -375,7 +375,7 @@ def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
 def UpdateSwitch(vn,idx,name,nv,sv):
     Debug ("UpdateSwitch("+str(vn)+","+str(idx)+","+str(name)+","+str(nv)+","+str(sv)+" called")
     if (not vn in Devices) or (not idx in Devices[vn].Units):
-        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, DeviceID=vn, Used=True).Create()
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, DeviceID=vn, Used=False).Create()
     if (Devices[vin].Units[idx].nValue==nv and Devices[vin].Units[idx].sValue==sv):
         Debug("Switch status unchanged, not updating "+Devices[vin].Units[idx].Name)
     else:
@@ -389,7 +389,7 @@ def UpdateSwitch(vn,idx,name,nv,sv):
 def UpdateDoorOrWindow(vin,idx,name,value):
     Debug ("UpdateDoorOrWindow("+str(vin)+","+str(idx)+","+str(name)+","+str(value)+") called")
     if (not vin in Devices) or (not idx in Devices[vin].Units):
-        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=11, DeviceID=vin, Used=True).Create()
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=11, DeviceID=vin, Used=False).Create()
     if value=="OPEN" and Devices[vin].Units[idx].nValue==0:
         Devices[vin].Units[idx].nValue = 1
         Devices[vin].Units[idx].sValue = "Open"
@@ -407,7 +407,7 @@ def UpdateDoorOrWindow(vin,idx,name,value):
 def UpdateLock(vin,idx,name,value):
     Debug ("UpdateLock("+str(vin)+","+str(idx)+","+str(name)+","+str(value)+") called")
     if (not vin in Devices) or (not idx in Devices[vin].Units):
-        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=19, DeviceID=vin, Used=True).Create()
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=19, DeviceID=vin, Used=False).Create()
     if value=="LOCKED" and Devices[vin].Units[idx].nValue==0:
         Devices[vin].Units[idx].nValue = 1
         Devices[vin].Units[idx].sValue = "Locked"
@@ -425,7 +425,7 @@ def UpdateLock(vin,idx,name,value):
 def UpdateOdoMeter(vn,idx,name,value):
     options = {"ValueQuantity": "Custom", "ValueUnits": "km"}
     if (not vn in Devices) or (not idx in Devices[vn].Units):
-        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=113, Switchtype=3, DeviceID=vin, Options=options,Used=True).Create()
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=113, Switchtype=3, DeviceID=vin, Options=options,Used=False).Create()
     Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(value))
     if value!=Devices[vin].Units[idx].nValue:
         Devices[vin].Units[idx].nValue = value 
