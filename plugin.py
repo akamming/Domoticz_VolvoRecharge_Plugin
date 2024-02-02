@@ -364,7 +364,7 @@ def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options, Used=False).Create()
     if nv!=Devices[vin].Units[idx].nValue:
-        Devices[vin].Units[idx].nValue = nv
+        Devices[vin].Units[idx].nValue = int(nv)
         Devices[vin].Units[idx].sValue = sv
         Devices[vin].Units[idx].Update(Log=True)
         Domoticz.Log("Selector Switch ("+Devices[vin].Units[idx].Name+")")
@@ -380,7 +380,7 @@ def UpdateSwitch(vn,idx,name,nv,sv):
         Debug("Switch status unchanged, not updating "+Devices[vin].Units[idx].Name)
     else:
         Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(nv)+","+str(sv))
-        Devices[vin].Units[idx].nValue = nv
+        Devices[vin].Units[idx].nValue = int(nv)
         Devices[vin].Units[idx].sValue = sv
         Devices[vin].Units[idx].Update(Log=True)
         Domoticz.Log("On/Off Switch ("+Devices[vin].Units[idx].Name+")")
@@ -428,7 +428,7 @@ def UpdateOdoMeter(vn,idx,name,value):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=113, Switchtype=3, DeviceID=vin, Options=options,Used=False).Create()
     Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(value))
     if value!=Devices[vin].Units[idx].nValue:
-        Devices[vin].Units[idx].nValue = value 
+        Devices[vin].Units[idx].nValue = int(value) 
         Devices[vin].Units[idx].sValue = value
         Devices[vin].Units[idx].Update(Log=True)
         Domoticz.Log("Counter ("+Devices[vin].Units[idx].Name+")")
