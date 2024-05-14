@@ -42,9 +42,9 @@ Reported to work for
 - Volco XC40 Pure Electric Twin
 - Volco C40 Pure Electric
 - Volvo C40 Pure Electric Twin
-
+- Volvo XC60 PHEV
 
 If you tested with another vehicle, pls let me know by reporting an "issue" in this repository, i will add to the doc
 
 ## TODO
-out of ideas ;-)
+adjust for other car types (XC40 PHEV, EX30, etc...)
