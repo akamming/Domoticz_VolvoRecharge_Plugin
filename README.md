@@ -36,15 +36,23 @@ This last switch has a very simple implementatiation. If you start climatisation
 ## Security
 This is a normal domoticz plugin, so as secure as every other one. However since with this plugin you can lock and unlock your car, check your if your domoticz install, especially if it's connected to the internet, if it is really secure.You don't want someone to hack your domoticz and then also have access to your car 
 
-## Testing
-Reported to work for
+## Supported cars
+
+Every car which is supported by the Volvo Energy API should theoretically work. This support can be found here: https://developer.volvocars.com/apis/energy/v1/overview/#availability
+
+The plugin has been reported to work for
 - Volvo XC40 Pure Electric
 - Volco XC40 Pure Electric Twin
 - Volco C40 Pure Electric
 - Volvo C40 Pure Electric Twin
 - Volvo XC60 PHEV
 
-If you tested with another vehicle, pls let me know by reporting an "issue" in this repository, i will add to the doc
+If you have seen it working on other car models, pls let me know by reporting an "issue" in this repository, i will add to the docs
 
 ## TODO
-adjust for other car types (XC40 PHEV, EX30, etc...)
+(requires update of the API on Volvo side, but if they are there i would like to add)
+- Check Climatization status 
+- Open/Close Open windows
+- Set Charging Limits (Amperage/Percentage)
+- Start/Stop Charging
+- Honk/Flash (API is there, but does not seem to work)
