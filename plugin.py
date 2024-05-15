@@ -1,9 +1,9 @@
-# Volvo Recharge (Full EV) plugin
+# Volvo Recharge (Full EV or PHEV) plugin
 #
 # Author: akamming
 #
 """
-<plugin key="VolvoEV" name="Volvo Recharge (Full EV)" author="akamming" version="0.1.0" wikilink="http://www.domoticz.com/wiki/plugins/plugin.html" externallink="https://github.com/akamming/Domoticz_VolvoRecharge_Plugin">
+<plugin key="VolvoEV" name="Volvo Recharge (Full EV or PHEV)" author="akamming" version="0.1.0" wikilink="http://www.domoticz.com/wiki/plugins/plugin.html" externallink="https://github.com/akamming/Domoticz_VolvoRecharge_Plugin">
     <description>
         <h2>Volvo Recharge (Full EV) plugin</h2><br/>
         domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your car sensors can be integrated into your home automation use cases.
