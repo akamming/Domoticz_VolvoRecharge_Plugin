@@ -731,22 +731,27 @@ def GetRechargeStatus():
                      float(newValue))
 
         #Calculate Charging system Status value
-        chargestatus=RechargeStatus["data"]["chargingSystemStatus"]["value"] 
+        chargestatus=RechargeStatus["data"]["chargingSystemStatus"]["value"]
         newValue=0
         if chargestatus=="CHARGING_SYSTEM_IDLE":
             newValue=0
         elif chargestatus=="CHARGING_SYSTEM_CHARGING":
             newValue=10
-        elif chargestatus=="CHARGING_SYSTEM_FAULT":
+        elif chargestatus=="CHARGING_SYSTEM_DONE":
             newValue=20
+        elif chargestatus=="CHARGING_SYSTEM_FAULT":
+            newValue=30
+        elif chargestatus=="CHARGING_SYSTEM_SCHEDULED":
+            newValue=40
         elif chargestatus=="CHARGING_SYSTEM_UNSPECIFIED":
-            newValue=30
+            newValue=50
         else:
-            newValue=30
+            Error("Invalid Charging system status received "+chargestatus)
+            newValue=50
 
         #update selector switch for Charging Connection Status
         options = {"LevelActions": "|||",
-                  "LevelNames": "Idle|Charging|Fault|Unspecified",
+                  "LevelNames": "Idle|Charging|Done|Fault|Scheduled|Unspecified",
                   "LevelOffHidden": "false",
                   "SelectorStyle": "1"}
         UpdateSelectorSwitch(vin,CHARGINGSYSTEMSTATUS,"chargingSystemStatus",options, int(newValue), float(newValue))
