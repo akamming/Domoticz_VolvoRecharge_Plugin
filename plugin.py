@@ -141,6 +141,14 @@ REGISTRATIONPLATELIGHTWARNING=60
 SIDEMARKLIGHTSWARNING=61
 HAZARDLIGHTSWARNING=62
 REVERSELIGHTSWARNING=63
+CHARGEDATHOME=64
+CHARGEDPLUBLICAC=65
+CHARGEDPUBLICDC=66
+CHARGEDPUBLIC=67
+CHARGEDTOTAL=68
+USEDKWH=69
+CHARGINGATHOME=70
+CHARGINGPUBLIC=71
 
 def Debug(text):
     if debugging:
@@ -684,11 +692,6 @@ def GetRechargeStatus():
                      float(RechargeStatus["data"]["electricRange"]["value"]))
 
 
-        #update Percentage Device
-        UpdateSensor(vin,BATTERYCHARGELEVEL,"batteryChargeLevel",243,6,None,
-                     float(RechargeStatus["data"]["batteryChargeLevel"]["value"]),
-                     float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))
-
         #update Fullrange Device
         CalculatedRange=float(RechargeStatus["data"]["electricRange"]["value"]) * 100 / float(RechargeStatus["data"]["batteryChargeLevel"]["value"])
         UpdateSensor(vin,FULLRANGE,"fullRange",243,31,{'Custom':'1;km'},
@@ -755,6 +758,11 @@ def GetRechargeStatus():
                   "LevelOffHidden": "false",
                   "SelectorStyle": "1"}
         UpdateSelectorSwitch(vin,CHARGINGSYSTEMSTATUS,"chargingSystemStatus",options, int(newValue), float(newValue))
+        
+        #update Percentage Device
+        UpdateSensor(vin,BATTERYCHARGELEVEL,"batteryChargeLevel",243,6,None,
+                     float(RechargeStatus["data"]["batteryChargeLevel"]["value"]),
+                     float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))
     else:
         Error("Updating Recharge Status failed")
 
@@ -879,12 +887,12 @@ def Heartbeat():
             # do updates
             Info("Updating Devices")
             lastupdate=time.time()
+            GetLocation() #Location must be known before GetRechargeStatus te detect local charging
             GetRechargeStatus()
             GetDoorWindowAndLockStatus()
             GetOdoMeter()
             GetTyreStatus()
             GetDiagnostics()
-            GetLocation()
             GetEngineStatus() 
             GetEngine()
             GetWarnings()
