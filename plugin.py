@@ -368,12 +368,34 @@ def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
     else:
         Debug("not updating General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
 
-def UpdateKWHMeter(vn,idx,name,power,counter):
+def IncreaseKWHMeter(vn,idx,name,percentage):
+
+    #increase KWH meter based on the diff of the batterypercentage 
+    global batteryPackSize;
+    
+    #Create Device if it does not exist
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=243, Subtype=29, DeviceID=vn, Used=False).Create()
-    Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(power)+";"+str(counter))
+
+    # Calculate power
+    TimeElapsedSinceLastUpdate=None
+    try:
+        TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.strptime(Devices[vin].Units[idx].LastUpdate, '%Y-%m-%d %H:%M:%S')
+    except TypeError:
+        TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.fromtimestamp(time.mktime(time.strptime(Devices[vin].Units[idx].LastUpdate, '%Y-%m-%d %H:%M:%S')))
+    power=batteryPackSize/100*percentage*1000*3600/TimeElapsedSinceLastUpdate.total_seconds()
+    
+    #calculate new kwh value
+    newkwh=0
+    try:
+        currentkwh=Devices[vin].Units[idx].sValue.split(";")
+        newkwh=float(currentkwh[1])+batteryPackSize/100*percentage*1000;
+    except KeyError: #Device does not exist yet
+        newkwh=0
+
+    Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(power)+";"+str(newkwh))
     Devices[vin].Units[idx].nValue = 0
-    Devices[vin].Units[idx].sValue = str(power)+";"+str(counter)
+    Devices[vin].Units[idx].sValue = str(power)+";"+str(newkwh)
     Devices[vin].Units[idx].Update(Log=True)
     Domoticz.Log("KWH Meter ("+Devices[vin].Units[idx].Name+")")
 
@@ -770,33 +792,19 @@ def GetRechargeStatus():
 
         #Update kwh counters
         DeltaPercentageBattery=float(RechargeStatus["data"]["batteryChargeLevel"]["value"])-float(Devices[vin].Units[BATTERYCHARGELEVEL].sValue)
-        SecondsElapsedSinceLastUpdate=None
-        try:
-            TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.strptime(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate, '%Y-%m-%d %H:%M:%S')
-        except TypeError:
-            TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.fromtimestamp(time.mktime(time.strptime(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate, '%Y-%m-%d %H:%M:%S')))
+        
         if DeltaPercentageBattery<0:
-            Error("Car is using Energy, we should update the used energy counter")
-            power=batteryPackSize/100*-DeltaPercentageBattery*1000*3600/TimeElapsedSinceLastUpdate.total_seconds()
-            usedkwh=0
-            try:
-                currentusedkwh=Devices[vin].Units[USEDKWH].sValue.split(";")
-                usedkwh=float(currentusedkwh[1])+batteryPackSize/100*-DeltaPercentageBattery*1000;
-            except KeyError: #Device does not exist yet
-                usedkwh=0
-            UpdateKWHMeter(vin,USEDKWH, "usedKWH", power, usedkwh) 
-
+            Error("Car is using Energy, we should increase the used energy counter")
+            IncreaseKWHMeter(vin,USEDKWH, "usedKWH", -DeltaPercentageBattery) 
+            IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
         elif DeltaPercentageBattery>0:
             Error("Car is is gaining Energy, we should update the total charged counter")
-            power=batteryPackSize/100*DeltaPercentageBattery*1000*3600/TimeElapsedSinceLastUpdate.total_seconds()
-            try:
-                currentchargedtotal=Devices[vin].Units[CHARGEDTOTAL].sValue.split(";")
-                chargedtotal=float(currentchargedtotal[1])+batteryPackSize/100*DeltaPercentageBattery*1000;
-            except KeyError:  # Device does not exist yet
-                chargedtotal=0
-            UpdateKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", power, chargedtotal) 
+            IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", DeltaPercentageBattery) 
+            IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0) 
         else:
             Debug("Car is not using or charging energy")
+            IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
+            IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0) 
         
         #update Percentage Device
         UpdateSensor(vin,BATTERYCHARGELEVEL,"batteryChargeLevel",243,6,None,
