@@ -393,9 +393,9 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
     except KeyError: #Device does not exist yet
         newkwh=0
 
-    Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(power)+";"+str(newkwh))
+    Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(int(power))+";"+str(newkwh))
     Devices[vin].Units[idx].nValue = 0
-    Devices[vin].Units[idx].sValue = str(power)+";"+str(newkwh)
+    Devices[vin].Units[idx].sValue = str(int(power))+";"+str(newkwh)
     Devices[vin].Units[idx].Update(Log=True)
     Domoticz.Log("KWH Meter ("+Devices[vin].Units[idx].Name+")")
 
@@ -794,17 +794,29 @@ def GetRechargeStatus():
         DeltaPercentageBattery=float(RechargeStatus["data"]["batteryChargeLevel"]["value"])-float(Devices[vin].Units[BATTERYCHARGELEVEL].sValue)
         
         if DeltaPercentageBattery<0:
-            Error("Car is using Energy, we should increase the used energy counter")
+            Debug("Car is using Energy, we should increase the used energy counter")
             IncreaseKWHMeter(vin,USEDKWH, "usedKWH", -DeltaPercentageBattery) 
             IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
         elif DeltaPercentageBattery>0:
-            Error("Car is is gaining Energy, we should update the total charged counter")
+            Debug("Car is is gaining Energy, we should update the total charged counter")
             IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", DeltaPercentageBattery) 
             IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0) 
         else:
-            Debug("Car is not using or charging energy")
-            IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
-            IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0) 
+            #determine time spent after last update of batter percentage
+            TimeElapsedSinceLastUpdate=None
+            try:
+                TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.strptime(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate, '%Y-%m-%d %H:%M:%S')
+            except TypeError:
+                TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.fromtimestamp(time.mktime(time.strptime(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate, '%Y-%m-%d %H:%M:%S')))
+
+            # reset powerlevel if batterlevel has not changed for  10 mins
+            if TimeElapsedSinceLastUpdate.total_seconds()>=500:
+                Debug("Car is not using or charging energy")
+                IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
+                IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
+            else:
+                Debug("timeout not expired yet, not resetting counters ("+str(500-TimeElapsedSinceLastUpdate.total_seconds())+" remaining)")
+
         
         #update Percentage Device
         UpdateSensor(vin,BATTERYCHARGELEVEL,"batteryChargeLevel",243,6,None,
