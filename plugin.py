@@ -371,11 +371,15 @@ def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
 def IncreaseKWHMeter(vn,idx,name,percentage):
 
     #increase KWH meter based on the diff of the batterypercentage 
-    global batteryPackSize;
+    global batteryPackSize
     
     #Create Device if it does not exist
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=243, Subtype=29, DeviceID=vn, Used=False).Create()
+
+    #init values
+    newkwh=0
+    power=0
 
     # Calculate power
     TimeElapsedSinceLastUpdate=None
@@ -386,12 +390,13 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
     power=batteryPackSize/100*percentage*1000*3600/TimeElapsedSinceLastUpdate.total_seconds()
     
     #calculate new kwh value
-    newkwh=0
     try:
         currentkwh=Devices[vin].Units[idx].sValue.split(";")
-        newkwh=float(currentkwh[1])+batteryPackSize/100*percentage*1000;
+        newkwh=float(currentkwh[1])+batteryPackSize/100*percentage*1000
     except KeyError: #Device does not exist yet
-        newkwh=0
+        newkwh=batteryPackSize/100*percentage*1000
+    except IndexError:
+        newkwh=batteryPackSize/100*percentage*1000
 
     Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(int(power))+";"+str(newkwh))
     Devices[vin].Units[idx].nValue = 0
@@ -800,7 +805,19 @@ def GetRechargeStatus():
         elif DeltaPercentageBattery>0:
             Debug("Car is is gaining Energy, we should update the total charged counter")
             IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", DeltaPercentageBattery) 
-            IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0) 
+            IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
+
+            #Check if we are charging near home or public charging
+            try:
+                distance2home=float(Devices[vin].Units[DISTANCE2HOME].sValue)
+                if distance2home<0.025: #Less than 25 meter
+                    Error ("Charging at home")
+                    IncreaseKWHMeter(vin,CHARGEDATHOME,"chargedAtHome",DeltaPercentageBattery)
+                else:
+                    Error("Public Charging")
+                    IncreaseKWHMeter(vin,CHARGEDPUBLIC,"chargedPublic",DeltaPercentageBattery)
+            except KeyError:
+                Error("No Distance 2 home device, also not creating/updating athome/public charging kwh counters")
         else:
             #determine time spent after last update of batter percentage
             TimeElapsedSinceLastUpdate=None
@@ -814,6 +831,13 @@ def GetRechargeStatus():
                 Debug("Car is not using or charging energy")
                 IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
                 IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
+
+                #If we know the distance to home, also reset chargedathome and chargedpublic
+                if DISTANCE2HOME in Devices[vin].Units:
+                    IncreaseKWHMeter(vin,CHARGEDATHOME,"chargedAtHome",0)
+                    IncreaseKWHMeter(vin,CHARGEDPUBLIC,"chargedPublic",0)
+                else:
+                    Debug("Not updating chargedathome and chargedpublic, cause distance2home not known")
             else:
                 Debug("timeout not expired yet, not resetting counters ("+str(500-TimeElapsedSinceLastUpdate.total_seconds())+" remaining)")
 
