@@ -58,6 +58,7 @@ from math import sin, cos, sqrt, atan2, radians
 #Constants
 TIMEOUT=10 #timeout for API requests
 MINTIMEBETWEENLOGINATTEMPTS=600 #10 mins
+HOMECHARGINGRADIUS=0.025 # 25 meter (assume the car is using the home charger when with 25 meters)
 
 #global vars
 abrp_api_key=None
@@ -76,6 +77,7 @@ info=False
 climatizationactionid=None
 climatizationstoptimestamp=time.time()
 lastloginattempttimestamp=time.time()-MINTIMEBETWEENLOGINATTEMPTS
+ACCharging=True; #if unknown, assume AC charger at the beginning
 
 #Device Numbers
 REMAININGRANGE=1
@@ -142,7 +144,7 @@ SIDEMARKLIGHTSWARNING=61
 HAZARDLIGHTSWARNING=62
 REVERSELIGHTSWARNING=63
 CHARGEDATHOME=64
-CHARGEDPLUBLICAC=65
+CHARGEDPUBLICAC=65
 CHARGEDPUBLICDC=66
 CHARGEDPUBLIC=67
 CHARGEDTOTAL=68
@@ -387,16 +389,18 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
         TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.strptime(Devices[vin].Units[idx].LastUpdate, '%Y-%m-%d %H:%M:%S')
     except TypeError:
         TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.fromtimestamp(time.mktime(time.strptime(Devices[vin].Units[idx].LastUpdate, '%Y-%m-%d %H:%M:%S')))
-    power=batteryPackSize/100*percentage*1000*3600/TimeElapsedSinceLastUpdate.total_seconds()
     
     #calculate new kwh value
     try:
         currentkwh=Devices[vin].Units[idx].sValue.split(";")
         newkwh=float(currentkwh[1])+batteryPackSize/100*percentage*1000
+        power=batteryPackSize/100*percentage*1000*3600/TimeElapsedSinceLastUpdate.total_seconds()
     except KeyError: #Device does not exist yet
         newkwh=batteryPackSize/100*percentage*1000
-    except IndexError:
+        power=0
+    except IndexError: #Devices has weird energy reading
         newkwh=batteryPackSize/100*percentage*1000
+        power=0
 
     Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(int(power))+";"+str(newkwh))
     Devices[vin].Units[idx].nValue = 0
@@ -716,6 +720,7 @@ def GetDiagnostics():
 
 def GetRechargeStatus():
     global batteryPackSize
+    global ACCharging
 
     Debug("GetRechargeStatus() called")
     RechargeStatus=VolvoAPI("https://api.volvocars.com/energy/v1/vehicles/"+vin+"/recharge-status","application/vnd.volvocars.api.energy.vehicledata.v1+json")
@@ -810,12 +815,31 @@ def GetRechargeStatus():
             #Check if we are charging near home or public charging
             try:
                 distance2home=float(Devices[vin].Units[DISTANCE2HOME].sValue)
-                if distance2home<0.025: #Less than 25 meter
-                    Error ("Charging at home")
+                if distance2home<=HOMECHARGINGRADIUS: #if the car is within the home charging radius, assume it is charging usiung the homecharger
+                    Debug ("Charging at home")
                     IncreaseKWHMeter(vin,CHARGEDATHOME,"chargedAtHome",DeltaPercentageBattery)
+                    IncreaseKWHMeter(vin,CHARGEDPUBLIC,"chargedPublic",0)
+                    IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC", 0)
+                    IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC", 0)
                 else:
-                    Error("Public Charging")
+                    Debug("Public Charging")
                     IncreaseKWHMeter(vin,CHARGEDPUBLIC,"chargedPublic",DeltaPercentageBattery)
+                    IncreaseKWHMeter(vin,CHARGEDATHOME,"chargedAtHome",0)
+                    #Check which kind of charing
+                    if Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==10:
+                        ACCharging=True
+                    elif Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==20:
+                        ACCharging=False
+                    else:
+                        Debug("Unknown charging type")
+
+                    if ACCharging:
+                        IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC", DeltaPercentageBattery)
+                        IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC", 0)
+                    else:
+                        IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC", DeltaPercentageBattery)
+                        IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC", 0)
+                        
             except KeyError:
                 Error("No Distance 2 home device, also not creating/updating athome/public charging kwh counters")
         else:
@@ -826,9 +850,9 @@ def GetRechargeStatus():
             except TypeError:
                 TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.fromtimestamp(time.mktime(time.strptime(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate, '%Y-%m-%d %H:%M:%S')))
 
-            # reset powerlevel if batterlevel has not changed for  10 mins
-            if TimeElapsedSinceLastUpdate.total_seconds()>=500:
-                Debug("Car is not using or charging energy")
+            # reset powerlevel if batterlevel has not changed for  5 mins
+            if TimeElapsedSinceLastUpdate.total_seconds()>=300:
+                Error("Car is not using or charging energy")
                 IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
                 IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
 
@@ -836,6 +860,8 @@ def GetRechargeStatus():
                 if DISTANCE2HOME in Devices[vin].Units:
                     IncreaseKWHMeter(vin,CHARGEDATHOME,"chargedAtHome",0)
                     IncreaseKWHMeter(vin,CHARGEDPUBLIC,"chargedPublic",0)
+                    IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC",0)
+                    IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC",0)
                 else:
                     Debug("Not updating chargedathome and chargedpublic, cause distance2home not known")
             else:
