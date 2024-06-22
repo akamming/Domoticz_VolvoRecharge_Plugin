@@ -994,7 +994,7 @@ def Heartbeat():
         #handle updates
         if time.time()-lastupdate>=updateinterval:
             # do updates
-            Info("Updating Devices")
+            Debug("Updating Devices")
             lastupdate=time.time()
             GetLocation() #Location must be known before GetRechargeStatus te detect local charging
             GetRechargeStatus()
