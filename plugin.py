@@ -852,7 +852,7 @@ def GetRechargeStatus():
 
             # reset powerlevel if batterlevel has not changed for  5 mins
             if TimeElapsedSinceLastUpdate.total_seconds()>=300:
-                Error("Car is not using or charging energy")
+                Debug("Car is not using or charging energy")
                 IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
                 IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
 
