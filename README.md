@@ -4,15 +4,19 @@ domoticz plugin for Volvo Recharge Full EV or PHEV vehicles
 domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your car sensors can be integrated into your home automation use cases.
 
 ## Features
+
+### Volvo API
 - recharge status (https://developer.volvocars.com/apis/energy/endpoints/recharge-status/)
 - doors, windows and lock status, including locking and unlocking of doors (https://developer.volvocars.com/apis/connected-vehicle/endpoints/doors-windows-locks/)
 - tyrepressure status (https://developer.volvocars.com/apis/connected-vehicle/endpoints/tyres/)
 - service status (https://developer.volvocars.com/apis/connected-vehicle/endpoints/diagnostics/#get-diagnostic-values)
 - start/stop climatisation (https://developer.volvocars.com/apis/connected-vehicle/endpoints/climate/)
 - Retrieve Vehicle location (https://developer.volvocars.com/apis/location/v1/endpoints/location/#get-location)
-- syncs SOC and charging status to ABRP (https://documenter.getpostman.com/view/7396339/SWTK5a8w)
 - Retrieves Vehicle warnings (https://developer.volvocars.com/apis/connected-vehicle/v2/endpoints/warnings/)
 
+### Other
+- syncs SOC and charging status to ABRP (https://documenter.getpostman.com/view/7396339/SWTK5a8w)
+- Estimates the number of kwh's used and charged (since the api only reports differences in battery percentage, this is only an estimation and not very accurate)
 
 ## Devices
 pls look at the above links to API for device descriptions
