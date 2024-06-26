@@ -394,7 +394,7 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
     try:
         currentkwh=Devices[vin].Units[idx].sValue.split(";")
         newkwh=float(currentkwh[1])+batteryPackSize/100*percentage*1000
-        power=batteryPackSize/100*percentage*1000*3600/TimeElapsedSinceLastUpdate.total_seconds()
+        power=(batteryPackSize*67/69)/100*percentage*1000*3600/TimeElapsedSinceLastUpdate.total_seconds()
     except KeyError: #Device does not exist yet
         newkwh=batteryPackSize/100*percentage*1000
         power=0
