@@ -389,6 +389,8 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
         TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.strptime(Devices[vin].Units[idx].LastUpdate, '%Y-%m-%d %H:%M:%S')
     except TypeError:
         TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.fromtimestamp(time.mktime(time.strptime(Devices[vin].Units[idx].LastUpdate, '%Y-%m-%d %H:%M:%S')))
+    except KeyError:
+        Error("Unable to update KWH device ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
     
     #calculate new kwh value
     try:
@@ -402,11 +404,14 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
         newkwh=batteryPackSize/100*percentage*1000
         power=0
 
-    Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(int(power))+";"+str(newkwh))
-    Devices[vin].Units[idx].nValue = 0
-    Devices[vin].Units[idx].sValue = str(int(power))+";"+str(newkwh)
-    Devices[vin].Units[idx].Update(Log=True)
-    Domoticz.Log("KWH Meter ("+Devices[vin].Units[idx].Name+")")
+    try:
+        Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(int(power))+";"+str(newkwh))
+        Devices[vin].Units[idx].nValue = 0
+        Devices[vin].Units[idx].sValue = str(int(power))+";"+str(newkwh)
+        Devices[vin].Units[idx].Update(Log=True)
+        Domoticz.Log("KWH Meter ("+Devices[vin].Units[idx].Name+")")
+    except KeyError:
+        Error("Unable to update KWH device ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
 def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
@@ -718,6 +723,13 @@ def GetDiagnostics():
     else:
         Error("Updating Diagnostics failed")
 
+def GetCommandAccessabilityStatus():
+    Debug("GetCommandAccessibilityStatus() called")
+    CAStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/command-accessibility","application/json")
+    if CAStatus:
+        Error(json.dumps(CAStatus))
+
+
 def GetRechargeStatus():
     global batteryPackSize
     global ACCharging
@@ -996,6 +1008,7 @@ def Heartbeat():
             # do updates
             Debug("Updating Devices")
             lastupdate=time.time()
+            GetCommandAccessabilityStatus() # see if we can update
             GetLocation() #Location must be known before GetRechargeStatus te detect local charging
             GetRechargeStatus()
             GetDoorWindowAndLockStatus()
@@ -1151,9 +1164,9 @@ class BasePlugin:
         vocpass=Parameters["Password"]
         vccapikey=Parameters["Mode1"]
         updateinterval=int(Parameters["Mode2"])
-        if (updateinterval<90):
+        if (updateinterval<100):
             Info("Updateinterval too low, correcting to 90 secs")
-            updateinterval=89 # putting is too exact 80 might sometimes lead to update after 100 secs 
+            updateinterval=99 # putting is too exact 80 might sometimes lead to update after 100 secs 
         lastupdate=time.time()-updateinterval-1 #force update
         expirytimestamp=time.time()-1 #force update
 
