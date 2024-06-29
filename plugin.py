@@ -381,32 +381,28 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=243, Subtype=29, DeviceID=vn, Used=False).Create()
 
-    #init values
-    newkwh=0
-    power=0
+    try:
 
-    # Calculate power
-    TimeElapsedSinceLastUpdate=None
-    try:
-        TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.strptime(Devices[vin].Units[idx].LastUpdate, '%Y-%m-%d %H:%M:%S')
-    except TypeError:
-        TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.fromtimestamp(time.mktime(time.strptime(Devices[vin].Units[idx].LastUpdate, '%Y-%m-%d %H:%M:%S')))
-    except KeyError:
-        Error("Unable to update KWH device ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
-    
-    #calculate new kwh value
-    try:
+        #init values
+        newkwh=0
+        power=0
+
+        # Calculate power
+        TimeElapsedSinceLastUpdate=None
+        try:
+            TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.strptime(Devices[vin].Units[idx].LastUpdate, '%Y-%m-%d %H:%M:%S')
+        except TypeError:
+            TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.fromtimestamp(time.mktime(time.strptime(Devices[vin].Units[idx].LastUpdate, '%Y-%m-%d %H:%M:%S')))
+        
+        #calculate new kwh value
         currentkwh=Devices[vin].Units[idx].sValue.split(";")
-        newkwh=float(currentkwh[1])+batteryPackSize/100*percentage*1000
-        power=(batteryPackSize*67/69)/100*percentage*1000*3600/TimeElapsedSinceLastUpdate.total_seconds()
-    except KeyError: #Device does not exist yet
-        newkwh=batteryPackSize/100*percentage*1000
-        power=0
-    except IndexError: #Devices has weird energy reading
-        newkwh=batteryPackSize/100*percentage*1000
-        power=0
+        if len(currentkwh)==2:
+            newkwh=float(currentkwh[1])+batteryPackSize/100*percentage*1000
+            power=(batteryPackSize*67/69)/100*percentage*1000*3600/TimeElapsedSinceLastUpdate.total_seconds()
+        else:
+            newkwh=batteryPackSize/100*percentage*1000
+            power=0
 
-    try:
         Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(int(power))+";"+str(newkwh))
         Devices[vin].Units[idx].nValue = 0
         Devices[vin].Units[idx].sValue = str(int(power))+";"+str(newkwh)
@@ -418,14 +414,17 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
 def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options, Used=False).Create()
-    
-    if nv!=Devices[vin].Units[idx].nValue:
-        Devices[vin].Units[idx].nValue = int(nv)
-        Devices[vin].Units[idx].sValue = sv
-        Devices[vin].Units[idx].Update(Log=True)
-        Domoticz.Log("Selector Switch ("+Devices[vin].Units[idx].Name+")")
-    else:
-        Debug("Not Updating Selector Switch ("+Devices[vin].Units[idx].Name+")")
+
+    try:
+        if nv!=Devices[vin].Units[idx].nValue:
+            Devices[vin].Units[idx].nValue = int(nv)
+            Devices[vin].Units[idx].sValue = sv
+            Devices[vin].Units[idx].Update(Log=True)
+            Domoticz.Log("Selector Switch ("+Devices[vin].Units[idx].Name+")")
+        else:
+            Debug("Not Updating Selector Switch ("+Devices[vin].Units[idx].Name+")")
+    except KeyError:
+        Error("Unable to update Selector device ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
 
 def UpdateSwitch(vn,idx,name,nv,sv):
