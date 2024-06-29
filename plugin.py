@@ -363,14 +363,18 @@ def GetVin():
 def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=tp, Subtype=subtp, DeviceID=vn, Options=options, Used=False).Create()
-    Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(nv)+","+str(sv))
-    if str(sv)!=Devices[vin].Units[idx].sValue:
-        Devices[vin].Units[idx].nValue = int(nv)
-        Devices[vin].Units[idx].sValue = sv
-        Devices[vin].Units[idx].Update(Log=True)
-        Domoticz.Log("General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
-    else:
-        Debug("not updating General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
+
+    try:
+        Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(nv)+","+str(sv))
+        if str(sv)!=Devices[vin].Units[idx].sValue:
+            Devices[vin].Units[idx].nValue = int(nv)
+            Devices[vin].Units[idx].sValue = sv
+            Devices[vin].Units[idx].Update(Log=True)
+            Domoticz.Log("General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
+        else:
+            Debug("not updating General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
+    except KeyError:
+        Error("Unable to update sensor ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
 def IncreaseKWHMeter(vn,idx,name,percentage):
 
@@ -431,64 +435,78 @@ def UpdateSwitch(vn,idx,name,nv,sv):
     Debug ("UpdateSwitch("+str(vn)+","+str(idx)+","+str(name)+","+str(nv)+","+str(sv)+" called")
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, DeviceID=vn, Used=False).Create()
-    if (Devices[vin].Units[idx].nValue==nv and Devices[vin].Units[idx].sValue==sv):
-        Debug("Switch status unchanged, not updating "+Devices[vin].Units[idx].Name)
-    else:
-        Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(nv)+","+str(sv))
-        Devices[vin].Units[idx].nValue = int(nv)
-        Devices[vin].Units[idx].sValue = sv
-        Devices[vin].Units[idx].Update(Log=True)
-        Domoticz.Log("On/Off Switch ("+Devices[vin].Units[idx].Name+")")
+
+    try:
+        if (Devices[vin].Units[idx].nValue==nv and Devices[vin].Units[idx].sValue==sv):
+            Debug("Switch status unchanged, not updating "+Devices[vin].Units[idx].Name)
+        else:
+            Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(nv)+","+str(sv))
+            Devices[vin].Units[idx].nValue = int(nv)
+            Devices[vin].Units[idx].sValue = sv
+            Devices[vin].Units[idx].Update(Log=True)
+            Domoticz.Log("On/Off Switch ("+Devices[vin].Units[idx].Name+")")
+    except KeyError:
+        Error("Unable to update switch ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
 
 def UpdateDoorOrWindow(vin,idx,name,value):
     Debug ("UpdateDoorOrWindow("+str(vin)+","+str(idx)+","+str(name)+","+str(value)+") called")
     if (not vin in Devices) or (not idx in Devices[vin].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=11, DeviceID=vin, Used=False).Create()
-    if value=="OPEN" and Devices[vin].Units[idx].nValue==0:
-        Devices[vin].Units[idx].nValue = 1
-        Devices[vin].Units[idx].sValue = "Open"
-        Devices[vin].Units[idx].Update(Log=True)
-        Domoticz.Log("Door/Window Contact ("+Devices[vin].Units[idx].Name+")")
-    elif value=="CLOSED" and Devices[vin].Units[idx].nValue==1:
-        Devices[vin].Units[idx].nValue = 0
-        Devices[vin].Units[idx].sValue = "Closed"
-        Devices[vin].Units[idx].Update(Log=True)
-        Domoticz.Log("Door/Window Contact ("+Devices[vin].Units[idx].Name+")")
-    else:
-        Debug("Door/Windows status unchanged not updating "+Devices[vin].Units[idx].Name)
-    
+
+    try:
+        if value=="OPEN" and Devices[vin].Units[idx].nValue==0:
+            Devices[vin].Units[idx].nValue = 1
+            Devices[vin].Units[idx].sValue = "Open"
+            Devices[vin].Units[idx].Update(Log=True)
+            Domoticz.Log("Door/Window Contact ("+Devices[vin].Units[idx].Name+")")
+        elif value=="CLOSED" and Devices[vin].Units[idx].nValue==1:
+            Devices[vin].Units[idx].nValue = 0
+            Devices[vin].Units[idx].sValue = "Closed"
+            Devices[vin].Units[idx].Update(Log=True)
+            Domoticz.Log("Door/Window Contact ("+Devices[vin].Units[idx].Name+")")
+        else:
+            Debug("Door/Windows status unchanged not updating "+Devices[vin].Units[idx].Name)
+    except KeyError:
+        Error("Unable to update door or window contact: ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
 def UpdateLock(vin,idx,name,value):
     Debug ("UpdateLock("+str(vin)+","+str(idx)+","+str(name)+","+str(value)+") called")
     if (not vin in Devices) or (not idx in Devices[vin].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=19, DeviceID=vin, Used=False).Create()
-    if value=="LOCKED" and Devices[vin].Units[idx].nValue==0:
-        Devices[vin].Units[idx].nValue = 1
-        Devices[vin].Units[idx].sValue = "Locked"
-        Devices[vin].Units[idx].Update(Log=True)
-        Domoticz.Log("Door Lock ("+Devices[vin].Units[idx].Name+")")
-    elif value=="UNLOCKED" and Devices[vin].Units[idx].nValue==1:
-        Devices[vin].Units[idx].nValue = 0
-        Devices[vin].Units[idx].sValue = "Unlocked"
-        Devices[vin].Units[idx].Update(Log=True)
-        Domoticz.Log("Door Lock ("+Devices[vin].Units[idx].Name+")")
-    else:
-        Debug("Lock status unchanged, not updating "+Devices[vin].Units[idx].Name)
-    
+
+    try:
+        if value=="LOCKED" and Devices[vin].Units[idx].nValue==0:
+            Devices[vin].Units[idx].nValue = 1
+            Devices[vin].Units[idx].sValue = "Locked"
+            Devices[vin].Units[idx].Update(Log=True)
+            Domoticz.Log("Door Lock ("+Devices[vin].Units[idx].Name+")")
+        elif value=="UNLOCKED" and Devices[vin].Units[idx].nValue==1:
+            Devices[vin].Units[idx].nValue = 0
+            Devices[vin].Units[idx].sValue = "Unlocked"
+            Devices[vin].Units[idx].Update(Log=True)
+            Domoticz.Log("Door Lock ("+Devices[vin].Units[idx].Name+")")
+        else:
+            Debug("Lock status unchanged, not updating "+Devices[vin].Units[idx].Name)
+    except KeyError:
+        Error("Unable to update Lock ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
 def UpdateOdoMeter(vn,idx,name,value):
     options = {"ValueQuantity": "Custom", "ValueUnits": "km"}
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=113, Switchtype=3, DeviceID=vin, Options=options,Used=False).Create()
-    Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(value))
-    if value!=Devices[vin].Units[idx].nValue:
-        Devices[vin].Units[idx].nValue = int(value) 
-        Devices[vin].Units[idx].sValue = value
-        Devices[vin].Units[idx].Update(Log=True)
-        Domoticz.Log("Counter ("+Devices[vin].Units[idx].Name+")")
-    else:
-        Debug("not updating Counter ("+Devices[vin].Units[idx].Name+")")
+
+    try:
+        Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(value))
+        if value!=Devices[vin].Units[idx].nValue:
+            Devices[vin].Units[idx].nValue = int(value) 
+            Devices[vin].Units[idx].sValue = value
+            Devices[vin].Units[idx].Update(Log=True)
+            Domoticz.Log("Counter ("+Devices[vin].Units[idx].Name+")")
+        else:
+            Debug("not updating Counter ("+Devices[vin].Units[idx].Name+")")
+    except KeyError:
+        Error("Unable to update Counter ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
 def GetOdoMeter():
     Debug("GetOdoMeter() Called")
