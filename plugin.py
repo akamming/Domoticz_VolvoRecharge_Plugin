@@ -730,7 +730,7 @@ def GetCommandAccessabilityStatus():
     Debug("GetCommandAccessibilityStatus() called")
     CAStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/command-accessibility","application/json")
     if CAStatus:
-        Error(json.dumps(CAStatus))
+        Debug(json.dumps(CAStatus))
         
         #update selector switch for AvailabilityStatus
         options = {"LevelActions": "|||",
@@ -749,6 +749,8 @@ def GetCommandAccessabilityStatus():
             Error("Unknow command accessibilitystatus: "+json.dumps(CAStatus))
             newValue=30
         UpdateSelectorSwitch(vin,AVAILABILITYSTATUS,"availabilityStatus",options, int(newValue), float(newValue)) 
+        if newValue>0:
+            Error("Car offline, API reports "+json.dumps(CAStatus))
         
         #update selector switch for AvailabilityReason
         options = {"LevelActions": "|||",
