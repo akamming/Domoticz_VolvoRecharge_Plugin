@@ -151,6 +151,8 @@ CHARGEDTOTAL=68
 USEDKWH=69
 CHARGINGATHOME=70
 CHARGINGPUBLIC=71
+AVAILABILITYSTATUS=72
+AVAILABILITYREASON=73
 
 def Debug(text):
     if debugging:
@@ -416,6 +418,7 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
 def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options, Used=False).Create()
+    
     if nv!=Devices[vin].Units[idx].nValue:
         Devices[vin].Units[idx].nValue = int(nv)
         Devices[vin].Units[idx].sValue = sv
@@ -728,6 +731,50 @@ def GetCommandAccessabilityStatus():
     CAStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/command-accessibility","application/json")
     if CAStatus:
         Error(json.dumps(CAStatus))
+        
+        #update selector switch for AvailabilityStatus
+        options = {"LevelActions": "|||",
+                  "LevelNames": "Available|Unavailable|Unspecified|Unknown",
+                  "LevelOffHidden": "false",
+                  "SelectorStyle": "1"}
+        status=CAStatus["data"]["availabilityStatus"]["value"]
+        newValue=0
+        if status=="AVAILABLE":
+            newValue=0
+        elif status=="UNAVAILABLE":
+            newValue=10
+        elif status=="UNSPECIFIED":
+            newValue=20
+        else:
+            Error("Unknow command accessibilitystatus: "+json.dumps(CAStatus))
+            newValue=30
+        UpdateSelectorSwitch(vin,AVAILABILITYSTATUS,"availabilityStatus",options, int(newValue), float(newValue)) 
+        
+        #update selector switch for AvailabilityReason
+        options = {"LevelActions": "|||",
+                  "LevelNames": "N.A.|Unspecified|No Internet|Power Save Mode|Car In Use|Unknown",
+                  "LevelOffHidden": "false",
+                  "SelectorStyle": "1"}
+        newValue=0
+        try:
+            status=CAStatus["data"]["availabilityStatus"]["unavailableReason"]
+            if status=="UNSPECIFIED":
+                newValue=10
+            elif status=="NO_INTERNET":
+                newValue=20
+            elif status=="POWER_SAVING_MODE":
+                newValue=30
+            elif status=="CAR_IN_USE":
+                newValue=40
+            else:
+                Error("Unknow command accessibilityreason: "+json.dumps(CAStatus))
+                newValue=50
+        except KeyError:
+            Debug("No accessibilityreason, setting value to 0")
+            newValue=0
+        UpdateSelectorSwitch(vin,AVAILABILITYREASON,"availabilityReason",options, int(newValue), float(newValue)) 
+    else:
+        Error("Updating Command Accessability failed")
 
 
 def GetRechargeStatus():
