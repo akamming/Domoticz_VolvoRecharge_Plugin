@@ -152,7 +152,7 @@ USEDKWH=69
 CHARGINGATHOME=70
 CHARGINGPUBLIC=71
 AVAILABILITYSTATUS=72
-AVAILABILITYREASON=73
+UNAVAILABLEREASON=73
 
 def Debug(text):
     if debugging:
@@ -774,7 +774,7 @@ def GetCommandAccessabilityStatus():
         except KeyError:
             Debug("No accessibilityreason, setting value to 0")
             newValue=0
-        UpdateSelectorSwitch(vin,AVAILABILITYREASON,"availabilityReason",options, int(newValue), float(newValue)) 
+        UpdateSelectorSwitch(vin,UNAVAILABLEREASON,"unavailableReason",options, int(newValue), float(newValue)) 
     else:
         Error("Updating Command Accessability failed")
 
