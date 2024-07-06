@@ -6,6 +6,7 @@ domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your
 ## Features
 
 ### Volvo API
+- availability status (https://developer.volvocars.com/apis/connected-vehicle/v2/endpoints/commands/#get-accessibility-status)
 - recharge status (https://developer.volvocars.com/apis/energy/endpoints/recharge-status/)
 - doors, windows and lock status, including locking and unlocking of doors (https://developer.volvocars.com/apis/connected-vehicle/endpoints/doors-windows-locks/)
 - tyrepressure status (https://developer.volvocars.com/apis/connected-vehicle/endpoints/tyres/)
