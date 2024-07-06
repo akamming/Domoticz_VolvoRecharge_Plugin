@@ -1074,16 +1074,22 @@ def Heartbeat():
             # do updates
             Debug("Updating Devices")
             lastupdate=time.time()
-            GetCommandAccessabilityStatus() # see if we can update
-            GetLocation() #Location must be known before GetRechargeStatus te detect local charging
-            GetRechargeStatus()
-            GetDoorWindowAndLockStatus()
-            GetOdoMeter()
-            GetTyreStatus()
-            GetDiagnostics()
-            GetEngineStatus() 
-            GetEngine()
-            GetWarnings()
+            GetCommandAccessabilityStatus() # check if we can update
+            if (Devices[vin].Units[UNAVAILABLEREASON].nValue==0 or Devices[vin].Units[UNAVAILABLEREASON].nValue==40):
+                GetLocation() #Location must be known before GetRechargeStatus te detect local charging
+                GetRechargeStatus()
+                if Devices[vin].Units[UNAVAILABLEREASON].nValue==0:
+                    GetDoorWindowAndLockStatus()
+                    GetOdoMeter()
+                    GetTyreStatus()
+                    GetDiagnostics()
+                    GetEngineStatus() 
+                    GetEngine()
+                    GetWarnings()
+                else:
+                    Error("Car in use, only updating Location & RechargeStatus")
+            else:
+                Error("Car unavailable, check AVAILABILTYSTATUS sensor to see why the car is unavailable")
         else:
             Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
         
