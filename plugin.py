@@ -767,7 +767,7 @@ def GetCommandAccessabilityStatus():
             newValue=30
         UpdateSelectorSwitch(vin,AVAILABILITYSTATUS,"availabilityStatus",options, int(newValue), float(newValue)) 
         if newValue>0:
-            Error("Car offline, API reports "+json.dumps(CAStatus))
+            Debug("Car offline, API reports "+json.dumps(CAStatus))
         
         #update selector switch for AvailabilityReason
         options = {"LevelActions": "|||",
@@ -1087,7 +1087,7 @@ def Heartbeat():
                     GetEngine()
                     GetWarnings()
                 else:
-                    Error("Car in use, only updating Location & RechargeStatus")
+                    Debug("Car in use, only updating Location & RechargeStatus")
             else:
                 Error("Car unavailable, check AVAILABILTYSTATUS sensor to see why the car is unavailable")
         else:
