@@ -27,6 +27,8 @@ There are 2 devices which can send commands to the volvo
 - The climatization switch can start and stop climatizion.  
 This last switch has a very simple implementatiation. If you start climatisation the switch will go off after 30 mins. This is just a timer and during this 30 mins you can stop the climatisation which was started by the plugin. The switch will not detect climatisation status when it was started using the app or the car itself (Limitation by the API: There is no API to check for climatisation status..)
 
+And then there are several energy devices. Since the API does not allow reading the used or charged energy, these are just estimations: If the battery percentage rises or drops, the plugin assumes charging or using and so updates the kwh devices accordingly. homecharging is assumed if the battery percentage is rising and the location is within 25 meters from home.
+
 ## Instructions
 - go to the plugin 
 - (if you don't have a volco on call account) Create a Volvo on Call Username/password, which is linked to your vehicle. (basically: install the follow on call app on your handset and follow instructions)
