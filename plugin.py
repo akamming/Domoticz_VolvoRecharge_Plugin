@@ -522,6 +522,17 @@ def GetOdoMeter():
 def GetDoorWindowAndLockStatus():
     Debug("GetDoorAndLockStatus() Called")
     
+    windows=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/windows","application/json")
+    if windows:
+        Debug(json.dumps(windows))
+        UpdateDoorOrWindow(vin,FRONTLEFTWINDOW,"FrontLeftWindow",windows["data"]["frontLeftWindow"]["value"])
+        UpdateDoorOrWindow(vin,FRONTRIGHTWINDOW,"FrontRightWindow",windows["data"]["frontRightWindow"]["value"])
+        UpdateDoorOrWindow(vin,REARLEFTWINDOW,"RearLeftWindow",windows["data"]["rearLeftWindow"]["value"])
+        UpdateDoorOrWindow(vin,REARRIGHTWINDOW,"RearRightWindow",windows["data"]["rearRightWindow"]["value"])
+        UpdateDoorOrWindow(vin,SUNROOF,"SunRoof",windows["data"]["sunroof"]["value"])
+    else:
+        Error("Updating Windows failed")
+
     doors=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/doors","application/json")
     if doors:
         Debug(json.dumps(doors))
@@ -535,17 +546,6 @@ def GetDoorWindowAndLockStatus():
         UpdateLock(vin,CARLOCKED,"centralLock",doors["data"]["centralLock"]["value"])
     else:
         Error("Updating Doors failed")
-
-    windows=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/windows","application/json")
-    if windows:
-        Debug(json.dumps(windows))
-        UpdateDoorOrWindow(vin,FRONTLEFTWINDOW,"FrontLeftWindow",windows["data"]["frontLeftWindow"]["value"])
-        UpdateDoorOrWindow(vin,FRONTRIGHTWINDOW,"FrontRightWindow",windows["data"]["frontRightWindow"]["value"])
-        UpdateDoorOrWindow(vin,REARLEFTWINDOW,"RearLeftWindow",windows["data"]["rearLeftWindow"]["value"])
-        UpdateDoorOrWindow(vin,REARRIGHTWINDOW,"RearRightWindow",windows["data"]["rearRightWindow"]["value"])
-        UpdateDoorOrWindow(vin,SUNROOF,"SunRoof",windows["data"]["sunroof"]["value"])
-    else:
-        Error("Updating Windows failed")
 
 def UpdateTyrePressure(status,idx,name):
     #Calculate Charging Connect Status value
