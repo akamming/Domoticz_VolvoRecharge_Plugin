@@ -156,6 +156,7 @@ CHARGINGATHOME=70
 CHARGINGPUBLIC=71
 AVAILABILITYSTATUS=72
 UNAVAILABLEREASON=73
+OUTSIDETEMP=74
 
 def Debug(text):
     if debugging:
@@ -976,6 +977,26 @@ def DistanceBetweenCoords(coords1,coords2):
     Debug=("Result: ", distance)
     return distance
 
+def getOutSideTemperature(longitude,latitude):
+    global access_token,refresh_token,expirytimestamp
+
+    Debug("RefreshToken() called")
+    
+    try:
+        url="https://api.openweathermap.org/data/2.5/weather?lat="+str(latitude)+"&lon="+str(longitude)+"&appid="+str(openweather_token)+"&units=metric"
+        response = requests.post(url , timeout=TIMEOUT) 
+        if response.status_code!=200:
+            Error("Error calling"+url+", HTTP Statuscode "+str(response.status_code))
+        else:
+            Debug("OpenWeather responded: "+str(response.json()))
+            ow=response.json()
+            UpdateSensor(vin,OUTSIDETEMP,"Outside Temperature",80,5,None,int(ow["main"]["temp"]),ow["main"]["temp"])
+            
+
+    except Exception as error:
+        Error("Openweather call failed")
+        Error(error)
+
 def GetLocation():
     Debug("GetLocation() called")
     Location=VolvoAPI("https://api.volvocars.com/location/v1/vehicles/"+vin+"/location","application/json")
@@ -986,6 +1007,12 @@ def GetLocation():
         UpdateSensor(vin,LATTITUDE,"Lattitude",243,31,{'Custom':'1;lat'}, int(Location["data"]["geometry"]["coordinates"][1]), Location["data"]["geometry"]["coordinates"][1])
         UpdateSensor(vin,ALTITUDE,"Altitude",243,31,{'Custom':'1;alt'}, int(Location["data"]["geometry"]["coordinates"][2]), Location["data"]["geometry"]["coordinates"][2])
         UpdateSensor(vin,HEADING,"Heading",243,31,{'Custom':'1;degrees'}, int(Location["data"]["properties"]["heading"]), str(Location["data"]["properties"]["heading"]))
+
+        #update temperature around car (if openweather token is present)
+        if openweather_token:
+            getOutSideTemperature(Location["data"]["geometry"]["coordinates"][0],Location["data"]["geometry"]["coordinates"][1])
+
+        #update distance to car
         if len(Settings["Location"])>0:
             Debug ( "Domoticz location is "+Settings["Location"])
             DomoticzLocation=Settings["Location"].split(";")
@@ -1206,7 +1233,7 @@ class BasePlugin:
         return
 
     def onStart(self):
-        global vocuser,vocpass,vccapikey,debugging,info,lastupdate,updateinterval,expirytimestamp,abrp_api_key,abrp_token
+        global vocuser,vocpass,vccapikey,debugging,info,lastupdate,updateinterval,expirytimestamp,abrp_api_key,abrp_token,openweather_token
         Debug("OnStart called")
         
         #read params
@@ -1225,7 +1252,11 @@ class BasePlugin:
         if debugging:
             DumpConfigToLog()
 
-        #initiate vars
+        #get openweather token
+        openweather_token =Parameters["Mode4"]
+        Debug("Openweather token = "+openweather_token)
+
+       #get abrp_token 
         values=Parameters["Mode5"].split(":")
         if len(values)==2:
             Debug("We have a valid ABRP config")
@@ -1240,7 +1271,7 @@ class BasePlugin:
         vccapikey=Parameters["Mode1"]
         updateinterval=int(Parameters["Mode2"])
         if (updateinterval<100):
-            Info("Updateinterval too low, correcting to 90 secs")
+            Info("Updateinterval too low, correcting to 100 secs")
             updateinterval=99 # putting is too exact 80 might sometimes lead to update after 100 secs 
         lastupdate=time.time()-updateinterval-1 #force update
         expirytimestamp=time.time()-1 #force update
