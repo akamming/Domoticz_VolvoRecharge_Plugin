@@ -1059,11 +1059,13 @@ def UpdateABRP():
         #Remaining
         RemainingRange=Devices[vin].Units[REMAININGRANGE].nValue
 
-        #outsidetemp
-        outsideTemp=Devices[vin].Units[OUTSIDETEMP].sValue
+        #build the url
+        url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":'+str(is_charging)+',"is_dcfc":'+str(is_dcfc)+',"est_battery_range":'+str(RemainingRange)+',"odometer":'+str(odometer)+'}'
+        if (vin in Devices) and (OUTSIDETEMP in Devices[vin].Units):
+            #we can include the outsidetemp in the url
+            outsideTemp=Devices[vin].Units[OUTSIDETEMP].sValue
+            url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":'+str(is_charging)+',"is_dcfc":'+str(is_dcfc)+',"est_battery_range":'+str(RemainingRange)+',"odometer":'+str(odometer)+',"ext_temp":'+str(outsideTemp)+'}'
 
-        #make the call
-        url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":'+str(is_charging)+',"is_dcfc":'+str(is_dcfc)+',"est_battery_range":'+str(RemainingRange)+',"odometer":'+str(odometer)+',"ext_temp":'+str(outsideTemp)+'}'
         Debug("ABRP url = "+url)
         response=requests.get(url,timeout=TIMEOUT)
         Debug(response.text)
