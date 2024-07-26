@@ -992,7 +992,6 @@ def getOutSideTemperature(longitude,latitude):
             ow=response.json()
             UpdateSensor(vin,OUTSIDETEMP,"Outside Temperature",80,5,None,int(ow["main"]["temp"]),ow["main"]["temp"])
             
-
     except Exception as error:
         Error("Openweather call failed")
         Error(error)
@@ -1058,10 +1057,13 @@ def UpdateABRP():
         odometer=Devices[vin].Units[ODOMETER].nValue;
 
         #Remaining
-        RemainingRange=Devices[vin].Units[REMAININGRANGE].nValue;
+        RemainingRange=Devices[vin].Units[REMAININGRANGE].nValue
+
+        #outsidetemp
+        outsideTemp=Devices[vin].Units[OUTSIDETEMP].sValue
 
         #make the call
-        url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":'+str(is_charging)+',"is_dcfc":'+str(is_dcfc)+',"est_battery_range":'+str(RemainingRange)+',"odometer":'+str(odometer)+'}'
+        url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":'+str(is_charging)+',"is_dcfc":'+str(is_dcfc)+',"est_battery_range":'+str(RemainingRange)+',"odometer":'+str(odometer)+',"ext_temp":'+str(outsideTemp)+'}'
         Debug("ABRP url = "+url)
         response=requests.get(url,timeout=TIMEOUT)
         Debug(response.text)
