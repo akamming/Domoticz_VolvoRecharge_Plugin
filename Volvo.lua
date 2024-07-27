@@ -26,8 +26,8 @@ logMarker = 'Volvo'                                         -- marker in the log
 return {
 	on = {
 		devices = {
-			'Volvo',  
-			'Volvo-chargingSystemStatus', 
+			carLockDevice,  
+			availabilityStatusDevice, 
  		},
  		timer = {
  		    timerRule  
