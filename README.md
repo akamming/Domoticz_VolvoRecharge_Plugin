@@ -41,6 +41,7 @@ And then there are several energy devices. Since the API does not allow reading 
    - Set API_KEY and token of ABRP (format api_key:token) Token can be obtained from ABRP app (selecting Generic method at "live data" will give you the token). API_Key can bet obtained by contacting ABRP developer (see instructions at this link:  https://documenter.getpostman.com/view/7396339/SWTK5a8w )
    - if in the domoticz settings the Longitude and Lattitude are correctly entered, the plugin will calculate the absolute distance to your car in km
    - Set openweather token (can be obtained by creating an account on this url https://home.openweathermap.org/users/sign_up )
+   - Copy the lua script to your scripts/dzVents/scripts editor for some basic fun with this plugin (notifying on charging status, notifying on open window status, notifying on forgot to lock)
 
 ## Security
 This is a normal domoticz plugin, so as secure as every other one. However since with this plugin you can lock and unlock your car, check your if your domoticz install, especially if it's connected to the internet, if it is really secure.You don't want someone to hack your domoticz and then also have access to your car 
