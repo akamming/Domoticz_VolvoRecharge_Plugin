@@ -2,7 +2,7 @@
 -- place in your domticz/scripts/dzVents/scripts dir or copy paste to the events editor in domoticz.
 
 --- Used Devices, make sure these names match the devicenames in domoticz
-carLockDevice='Volvo'                                       -- name of the device indicating the status of the carlock 
+carLockDevice='Volvo-carLock'                               -- name of the device indicating the status of the carlock 
 chargingSystemStatusDevice='Volvo-chargingSystemStatus'     -- name of the device indicating the chargingSystemStatus 
 availabilityStatusDevice='Volvo-availabilityStatus'         -- name of the device indicating the availabilityStatus of the API
 lattitudeDevice='Volvo-Lattitude'                           -- name of the device indicating the Lattide of the current position
