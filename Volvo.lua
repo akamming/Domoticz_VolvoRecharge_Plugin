@@ -27,7 +27,7 @@ return {
 	on = {
 		devices = {
 			carLockDevice,  
-			chargingSystemStatusDevice 
+			chargingSystemStatusDevice
  		},
  		timer = {
  		    timerRule  
