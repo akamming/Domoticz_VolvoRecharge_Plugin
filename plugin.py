@@ -211,9 +211,6 @@ def LoginToVOC():
                     access_token = resp['access_token']
                     refresh_token = resp['refresh_token']
                     expirytimestamp=time.time()+resp['expires_in']
-
-                    #after login: Get Vin
-                    GetVin()
             except ValueError as exc:
                 Error("Login Failed: unable to process json response from https://volvoid.eu.volvocars.com/as/token.oauth2 : "+str(exc))
 
@@ -267,6 +264,12 @@ def CheckRefreshToken():
             RefreshVOCToken()
         else:
             Debug("Not refreshing token, expires in "+str(expirytimestamp-time.time())+" seconds")
+
+        #get a vin if we don't have one
+        if vin:
+            Debug("We already have a vin")
+        else:
+            GetVin()
     else:
         if time.time()-lastloginattempttimestamp>=MINTIMEBETWEENLOGINATTEMPTS:
             Debug("Nog logged in, attempting to login")
