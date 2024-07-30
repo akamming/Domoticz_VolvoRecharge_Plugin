@@ -1,25 +1,44 @@
 -- script for notifying open windows and charging status, based on devices created in https://github.com/akamming/Domoticz_VolvoRecharge_Plugin
 -- place in your domticz/scripts/dzVents/scripts dir or copy paste to the events editor in domoticz.
--- Adjust names of devices in the script to match your devices
 
+--- Used Devices, make sure these names match the devicenames in domoticz
+carLockDevice='Volvo-carLock'                               -- name of the device indicating the status of the carlock 
+chargingSystemStatusDevice='Volvo-chargingSystemStatus'     -- name of the device indicating the chargingSystemStatus 
+availabilityStatusDevice='Volvo-availabilityStatus'         -- name of the device indicating the availabilityStatus of the API
+lattitudeDevice='Volvo-Lattitude'                           -- name of the device indicating the Lattide of the current position
+longitudeDevice='Volvo-Longitude'                           -- name of the device indicating the Longitude of the current position
+windowsToBeChecked = {                                      -- names of the windowdevices to be checked   
+    'Volvo-SunRoof',
+    'Volvo-FrontLeftWindow',
+    'Volvo-FrontRightWindow',
+    'Volvo-RearLeftWindow',
+    'Volvo-RearRightWindow'
+}
+
+--- other (for program logic)
+timerRule = 'Every 15 minutes'                              -- how often do you want to check if for open windows in combination with Buienradar predicting rain?
+buienradarCallback = 'Volvo-BuienRadar'                     -- callbacktrigger for Buienradar
+logLevel = domoticz.LOG_DEBUG                               -- loglevel, adjust to the whatever loglevel you like
+logMarker = 'Volvo'                                         -- marker in the loglines for this script
+
+-----
 
 return {
 	on = {
 		devices = {
-			'Volvo-CarLocked',  -- Lock Device of the volvo,
-			'Volvo-chargingSystemStatus', -- device which contains the charging state
-			-- 'test'  -- for testing purposes
+			carLockDevice,  
+			availabilityStatusDevice, 
  		},
  		timer = {
- 		    'Every 15 minutes'  -- how often do you want to check if for open windows in combination with Buienradar predicting rain?
+ 		    timerRule  
  	    },
  	    httpResponses = {
-			'Volvo-Buienradar' -- must match with the callback passed to the openURL command
+			buienRadarCallback
 		},
 	},
 	logging = {
-		level = domoticz.LOG_ERROR, -- adjust to the whatever loglevel you like
-		marker = 'Volvo',
+		level = loglevel, 
+		marker = logMarker,
 	},
 	execute = function(domoticz, item)
 	    
@@ -45,13 +64,6 @@ return {
 	        else
     	        domoticz.log('CheckWindows('..notificationMessage..')',domoticz.LOG_DEBUG)
 	        end
-    		windowsToBeChecked = { -- make sures these names match the names in domoticz  
-    		    'Volvo-SunRoof',
-    		    'Volvo-FrontLeftWindow',
-    		    'Volvo-FrontRightWindow',
-    		    'Volvo-RearLeftWindow',
-    		    'Volvo-RearRightWindow'
-    	    }
     	    -- checking the devices
 		    for key,window in pairs(windowsToBeChecked) do
     		    -- check if window is open
@@ -76,12 +88,12 @@ return {
 	    
 	    -- function which calls buienradar for the rain forecast for the current location of the car
 	    function callBuienRadar()
-            LAT=domoticz.devices('Volvo-Lattitude')
-            LON=domoticz.devices('Volvo-Longitude')
+            LAT=domoticz.devices(lattitudeDevice)
+            LON=domoticz.devices(longitudeDevice)
             domoticz.openURL({
 				url = 'https://gpsgadget.buienradar.nl/data/raintext/?lat='.. LAT.sValue ..'&lon='..LON.sValue,
 				method = 'GET',
-				callback = 'Volvo-Buienradar', -- see httpResponses above.
+				callback = buienRadarCallback, 
 		    })
         end
         
@@ -90,7 +102,7 @@ return {
     		domoticz.log('Device ' .. item.name .. ' was changed to ' ..item.nValue..','..item.sValue, domoticz.LOG_DEBUG)
     		
     		-- code to handle the changing of the lock status
-    		if (item.name=='Volvo-CarLocked')  then -- Lock device of the Volvo, make sure this is the same name on which the script triggers 
+    		if (item.name==carLockDevice)  then 
         		-- check if device was locked
         		if (item.active) then
         		    domoticz.log('Device was locked',domoticz.LOG_DEBUG)
@@ -101,7 +113,7 @@ return {
         		end
 
             -- code to handle the charging status
-            elseif (item.name=='Volvo-chargingSystemStatus' ) then  -- Lock device of the Volvo, make sure this is the same name on which the script triggers
+            elseif (item.name==chargingSystemStatusDevice ) then  
                 domoticz.log("Charging system Status changed, check if we have to notify",domoticz.LOG_DEBUG)
                 if (item.sValue=='Charging') then
                     domoticz.log("Charging started, sending notification",domoticz.LOG_FORCE)
@@ -118,15 +130,12 @@ return {
                 else
                     domoticz.log("charging status can be ignored: "..item.sValue,domoticz.LOG_DEBUG)
                 end
---          elseif (item.name=='test') then
---              callBuienRadar()
-        	else
         	    domoticz.log('Unknown device: '..item.name,domoticz.LOG_ERROR)
         	end
         	
         elseif item.isTimer then   -- handle events on the timer
             domoticz.log("Handling timer event",domoticz.LOG_DEBUG)
-            AVAILABLE=domoticz.devices('Volvo-availabilityStatus') -- name of the device which check availability of the API
+            AVAILABLE=domoticz.devices(availabilityStatusDevice) 
             domoticz.log("Availability status = "..AVAILABLE.sValue,domoticz.LOG_DEBUG)
             if AVAILABLE.sValue=='Available' then
                 --- Check1: Do we have open windows and if so: Call buienradar
@@ -138,7 +147,7 @@ return {
     			end
     			
     			-- Check2 Has the car been unlocked too long (while not moving)
-                lock=domoticz.devices('Volvo-CarLocked') -- name of the device which check availability of the API
+                lock=domoticz.devices(carLockDevice) 
         			
         		if (lock.active) then
         		    domoticz.log('Car  was  locked '..lock.lastUpdate.minutesAgo..' minutes Ago',domoticz.LOG_DEBUG)
@@ -147,6 +156,8 @@ return {
         		    if lock.lastUpdate.minutesAgo>15 then
     		            domoticz.notify('Volvo','Auto staat al '..lock.lastUpdate.minutesAgo..' minuten stil maar is niet afgesloten',domoticz.PRIORITY_HIGH)
     		            domoticz.log('sent notification Auto staat stil maar is niet afgesloten',domoticz.LOG_FORCE)
+    		        else
+    		            domoticz.log('car unlocked less than 15 mins ago, no need to notify',domoticz.LOG_DEBUG)
         		    end
         		end
             else
@@ -159,14 +170,14 @@ return {
             if item.hasLines then
                 -- we have data
                 if (#item.lines==24) then
-                    NextRainShower=120  -- 100 is treated as no shower coming
+                    NextRainShower=125  -- 125 is treated as no shower coming
                     for i=#item.lines,1,-1 do
                         domoticz.log("inspecting line "..i..' '..item.lines[i],domoticz.LOG_DEBUG)
                         if tonumber(string.sub(item.lines[i],1,3))>0 then
                             NextRainShower=(i-1)*5
                         end
                     end
-                    if NextRainShower<120 then
+                    if NextRainShower<125 then
                         -- Rain expected, check windows
             		    CheckWindows('Open raam en bui verwacht in '..NextRainShower..' minuten')
                     else
