@@ -60,6 +60,7 @@ from math import sin, cos, sqrt, atan2, radians
 
 #Constants
 TIMEOUT=10 #timeout for API requests
+CLIMATIZATIONTIMEOUT=60 #can take longer when car is in deepsleep
 MINTIMEBETWEENLOGINATTEMPTS=600 #10 mins
 HOMECHARGINGRADIUS=0.025 # 25 meter (assume the car is using the home charger when with 25 meters)
 
@@ -281,6 +282,7 @@ def CheckRefreshToken():
 def VolvoAPI(url,mediatype):
     Debug("VolvoAPI("+url+","+mediatype+") called")
     try:
+        starttime=datetime.datetime.now()
         status = requests.get(
             url,
             headers= {
@@ -290,9 +292,12 @@ def VolvoAPI(url,mediatype):
             },
             timeout=TIMEOUT
         )
+        endtime=datetime.datetime.now()
 
         Debug("\nResult:")
         Debug(status)
+        Debug("Result took "+str(endtime-starttime))
+
         if status.status_code!=200:
             Error("VolvoAPI failed calling "+url+", HTTP Statuscode "+str(status.status_code))
             Error("Reponse: "+str(status.json()))
@@ -1163,6 +1168,7 @@ def HandleClimatizationCommand(vin,idx,command):
 
         try:
             Debug("URL: {}".format(url))
+            starttime=datetime.datetime.now()
             status = requests.post(
                 url,
                 headers= {
@@ -1170,11 +1176,13 @@ def HandleClimatizationCommand(vin,idx,command):
                     "vcc-api-key": vccapikey,
                     "Authorization": "Bearer " + access_token
                 },
-                timeout=TIMEOUT
+                timeout=CLIMATIZATIONTIMEOUT
             )
+            endtime=datetime.datetime.now()
 
             Debug("\nResult:")
             Debug(status)
+            Debug("Command took "+str(endtime-starttime))
 
             sjson = json.dumps(status.json(), indent=4)
             Debug("\nResult JSON:")
