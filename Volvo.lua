@@ -27,8 +27,7 @@ return {
 	on = {
 		devices = {
 			carLockDevice,  
-			chargingSystemStatusDevice, 
-			'test'
+			chargingSystemStatusDevice
  		},
  		timer = {
  		    timerRule  
@@ -132,8 +131,6 @@ return {
                 else
                     domoticz.log("charging status can be ignored: "..item.sValue,domoticz.LOG_DEBUG)
                 end
-          elseif (item.name=='test') then
-              callBuienRadar()
         	else
         	    domoticz.log('Unknown device: '..item.name,domoticz.LOG_ERROR)
         	end
