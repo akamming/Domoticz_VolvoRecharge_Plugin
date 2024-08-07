@@ -276,6 +276,8 @@ def CheckRefreshToken():
             Debug("Nog logged in, attempting to login")
             lastloginattempttimestamp=time.time()
             LoginToVOC()
+            if refresh_token:
+                GetVin()
         else:
             Debug("Not logged in, retrying in "+str(MINTIMEBETWEENLOGINATTEMPTS-(time.time()-lastloginattempttimestamp))+" seconds")
 
