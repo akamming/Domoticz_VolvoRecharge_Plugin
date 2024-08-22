@@ -63,6 +63,7 @@ TIMEOUT=10 #timeout for API requests
 CLIMATIZATIONTIMEOUT=60 #can take longer when car is in deepsleep
 MINTIMEBETWEENLOGINATTEMPTS=600 #10 mins
 HOMECHARGINGRADIUS=0.025 # 25 meter (assume the car is using the home charger when with 25 meters)
+MAXUPDATEINTERVAL=24*3600 # Max number of seconds every sensor has to update when value has not changed, defaults to once per day
 
 #global vars
 abrp_api_key=None
@@ -373,20 +374,26 @@ def GetVin():
         Debug(error)
         vin=None
 
+def TimeElapsedSinceLastUpdate(timestring):
+        TimeElapsedSinceLastUpdate=None
+        try:
+            TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S')
+        except TypeError:
+            TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.fromtimestamp(time.mktime(time.strptime(timestring, '%Y-%m-%d %H:%M:%S')))
+        return TimeElapsedSinceLastUpdate
 
 def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=tp, Subtype=subtp, DeviceID=vn, Options=options, Used=False).Create()
-
     try:
         Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(nv)+","+str(sv))
-        if str(sv)!=Devices[vin].Units[idx].sValue:
+        if (str(sv)==Devices[vin].Units[idx].sValue and TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()<MAXUPDATEINTERVAL):
+            Debug("not updating General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
+        else:
             Devices[vin].Units[idx].nValue = int(nv)
             Devices[vin].Units[idx].sValue = sv
             Devices[vin].Units[idx].Update(Log=True)
             Domoticz.Log("General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
-        else:
-            Debug("not updating General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
     except KeyError:
         Error("Unable to update sensor ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
@@ -400,23 +407,15 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=243, Subtype=29, DeviceID=vn, Used=False).Create()
 
     try:
-
         #init values
         newkwh=0
         power=0
 
-        # Calculate power
-        TimeElapsedSinceLastUpdate=None
-        try:
-            TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.strptime(Devices[vin].Units[idx].LastUpdate, '%Y-%m-%d %H:%M:%S')
-        except TypeError:
-            TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.fromtimestamp(time.mktime(time.strptime(Devices[vin].Units[idx].LastUpdate, '%Y-%m-%d %H:%M:%S')))
-        
         #calculate new kwh value
         currentkwh=Devices[vin].Units[idx].sValue.split(";")
         if len(currentkwh)==2:
             newkwh=float(currentkwh[1])+batteryPackSize/100*percentage*1000
-            power=(batteryPackSize*67/69)/100*percentage*1000*3600/TimeElapsedSinceLastUpdate.total_seconds()
+            power=(batteryPackSize*67/69)/100*percentage*1000*3600/TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()
         else:
             newkwh=batteryPackSize/100*percentage*1000
             power=0
@@ -434,7 +433,7 @@ def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options, Used=False).Create()
 
     try:
-        if nv!=Devices[vin].Units[idx].nValue:
+        if nv!=Devices[vin].Units[idx].nValue or TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()>MAXUPDATEINTERVAL :
             Devices[vin].Units[idx].nValue = int(nv)
             Devices[vin].Units[idx].sValue = sv
             Devices[vin].Units[idx].Update(Log=True)
@@ -935,15 +934,8 @@ def GetRechargeStatus():
             except KeyError:
                 Error("No Distance 2 home device, also not creating/updating athome/public charging kwh counters")
         else:
-            #determine time spent after last update of batter percentage
-            TimeElapsedSinceLastUpdate=None
-            try:
-                TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.strptime(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate, '%Y-%m-%d %H:%M:%S')
-            except TypeError:
-                TimeElapsedSinceLastUpdate=datetime.datetime.now()-datetime.datetime.fromtimestamp(time.mktime(time.strptime(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate, '%Y-%m-%d %H:%M:%S')))
-
-            # reset powerlevel if batterlevel has not changed for  5 mins
-            if TimeElapsedSinceLastUpdate.total_seconds()>=300:
+            #reset powerlevel if batterlevel has not changed for  5 mins
+            if TimeElapsedSinceLastUpdate(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate).total_seconds()>=300:
                 Debug("Car is not using or charging energy")
                 IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
                 IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
@@ -957,7 +949,7 @@ def GetRechargeStatus():
                 else:
                     Debug("Not updating chargedathome and chargedpublic, cause distance2home not known")
             else:
-                Debug("timeout not expired yet, not resetting counters ("+str(500-TimeElapsedSinceLastUpdate.total_seconds())+" remaining)")
+                Debug("timeout not expired yet, not resetting counters")
 
         
         #update Percentage Device
