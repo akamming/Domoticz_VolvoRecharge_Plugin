@@ -450,7 +450,7 @@ def UpdateSwitch(vn,idx,name,nv,sv):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, DeviceID=vn, Used=False).Create()
 
     try:
-        if (Devices[vin].Units[idx].nValue==nv and Devices[vin].Units[idx].sValue==sv):
+        if (Devices[vin].Units[idx].nValue==nv and Devices[vin].Units[idx].sValue==sv and TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()<MAXUPDATEINTERVAL):
             Debug("Switch status unchanged, not updating "+Devices[vin].Units[idx].Name)
         else:
             Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(nv)+","+str(sv))
@@ -511,7 +511,7 @@ def UpdateOdoMeter(vn,idx,name,value):
 
     try:
         Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(value))
-        if value!=Devices[vin].Units[idx].nValue:
+        if value!=Devices[vin].Units[idx].nValue or TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()>MAXUPDATEINTERVAL:
             Devices[vin].Units[idx].nValue = int(value) 
             Devices[vin].Units[idx].sValue = value
             Devices[vin].Units[idx].Update(Log=True)
@@ -1114,8 +1114,8 @@ def Heartbeat():
             if (Devices[vin].Units[UNAVAILABLEREASON].nValue==0 or Devices[vin].Units[UNAVAILABLEREASON].nValue==40):
                 GetLocation() #Location must be known before GetRechargeStatus te detect local charging
                 GetRechargeStatus()
+                GetDoorWindowAndLockStatus()
                 if Devices[vin].Units[UNAVAILABLEREASON].nValue==0:
-                    GetDoorWindowAndLockStatus()
                     GetOdoMeter()
                     GetTyreStatus()
                     GetDiagnostics()
