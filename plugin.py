@@ -325,7 +325,7 @@ def CheckVehicleDetails(vin):
         vehicle = VolvoAPI( "https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin, "application/json")
         Info("retreived a "+str(vehicle["data"]["descriptions"]["model"])+", color "+str(vehicle["data"]["externalColour"])+", model year "+str(vehicle["data"]["modelYear"]))
         if vehicle:
-            if vehicle["data"]["fuelType"]=="ELECTRIC" or vehicle["data"]["fuelType"]=="FUEL/ELECTRIC":
+            if vehicle["data"]["fuelType"]=="ELECTRIC" or vehicle["data"]["fuelType"]=="FUEL/ELECTRIC" or vehicle["data"]["fuelType"]=="NONE":
                 Info("Setting BatteryCapacity to "+str(vehicle["data"]["batteryCapacityKWH"]))
                 batteryPackSize=vehicle["data"]["batteryCapacityKWH"]
             else:
