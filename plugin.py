@@ -701,61 +701,65 @@ def GetEngine():
         Error("Updating Engine failed")
 
 def GetDiagnostics():
-    Debug("GetDiagnostics() called")
-    Diagnostics=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/diagnostics","application/json")
-    if Diagnostics:
-        Debug(json.dumps(Diagnostics))
-        
-        #update engineHoursToService
-        UpdateSensor(vin,ENGINEHOURSTOSERVICE,"EngineHoursToService",243,31,{'Custom':'1;hrs'},
-                     int(Diagnostics["data"]["engineHoursToService"]["value"]),
-                     float(Diagnostics["data"]["engineHoursToService"]["value"]))
+    try:
+        Debug("GetDiagnostics() called")
+        Diagnostics=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/diagnostics","application/json")
+        if Diagnostics:
+            Debug(json.dumps(Diagnostics))
+            
+            #update selector switch for Washerfluidlevel
+            UpdateLevel(Diagnostics["data"]["washerFluidLevelWarning"]["value"],WASHERFLUIDLEVEL,"WasherFluidLevel")
+           
+           #update engineHoursToService
+            UpdateSensor(vin,ENGINEHOURSTOSERVICE,"EngineHoursToService",243,31,{'Custom':'1;hrs'},
+                         int(Diagnostics["data"]["engineHoursToService"]["value"]),
+                         float(Diagnostics["data"]["engineHoursToService"]["value"]))
 
-        #update kmToService
-        UpdateSensor(vin,KMTOSERVICE,"KmToService",243,31,{'Custom':'1;km'},
-                     int(Diagnostics["data"]["distanceToService"]["value"]),
-                     float(Diagnostics["data"]["distanceToService"]["value"]))
+            #update kmToService
+            UpdateSensor(vin,KMTOSERVICE,"KmToService",243,31,{'Custom':'1;km'},
+                         int(Diagnostics["data"]["distanceToService"]["value"]),
+                         float(Diagnostics["data"]["distanceToService"]["value"]))
 
-        #update monthsToService
-        UpdateSensor(vin,MONTHSTOSERVICE,"MonthsToService",243,31,{'Custom':'1;months'},
-                     int(Diagnostics["data"]["timeToService"]["value"]),
-                     float(Diagnostics["data"]["timeToService"]["value"]))
+            #update monthsToService
+            UpdateSensor(vin,MONTHSTOSERVICE,"MonthsToService",243,31,{'Custom':'1;months'},
+                         int(Diagnostics["data"]["timeToService"]["value"]),
+                         float(Diagnostics["data"]["timeToService"]["value"]))
 
-        #update selector switch for ServiceStatus
-        options = {"LevelActions": "|||",
-                  "LevelNames": "No Warning|Regular Maintenance Almost|Engine Hours Almost|Distance Driven Almost|Regular Maintenance|Engine Hours|Distance Driven|Regular Maintenance Overdue|Engine Hours Overdue|Distance Driven Overdue|Unknown",
-                  "LevelOffHidden": "false",
-                  "SelectorStyle": "1"}
-        status=Diagnostics["data"]["serviceWarning"]["value"]
-        newValue=0
-        if status=="NO_WARNING":
+            #update selector switch for ServiceStatus
+            options = {"LevelActions": "|||",
+                      "LevelNames": "No Warning|Regular Maintenance Almost|Engine Hours Almost|Distance Driven Almost|Regular Maintenance|Engine Hours|Distance Driven|Regular Maintenance Overdue|Engine Hours Overdue|Distance Driven Overdue|Unknown",
+                      "LevelOffHidden": "false",
+                      "SelectorStyle": "1"}
+            status=Diagnostics["data"]["serviceWarning"]["value"]
             newValue=0
-        elif status=="REGULAR_MAINTENANCE_ALMOST_TIME_FOR_SERVICE":
-            newValue=10
-        elif status=="REGULAR_MAINTENANCE_ALMOST_TIME_FOR_SERVICE":
-            newValue=20
-        elif status=="DISTANCE_DRIVEN_ALMOST_TIME_FOR_SERVICE":
-            newValue=30
-        elif status=="REGULAR_MAINTENANCE_TIME_FOR_SERVICE":
-            newValue=40
-        elif status=="REGULAR_MAINTENANCE_TIME_FOR_SERVICE":
-            newValue=50
-        elif status=="DISTANCE_DRIVEN_TIME_FOR_SERVICE":
-            newValue=60
-        elif status=="REGULAR_MAINTENANCE_OVERDUE_FOR_SERVICE":
-            newValue=70
-        elif status=="REGULAR_MAINTENANCE_OVERDUE_FOR_SERVICE":
-            newValue=80
-        elif status=="DISTANCE_DRIVEN_OVERDUE_FOR_SERVICE":
-            newValue=90
+            if status=="NO_WARNING":
+                newValue=0
+            elif status=="REGULAR_MAINTENANCE_ALMOST_TIME_FOR_SERVICE":
+                newValue=10
+            elif status=="REGULAR_MAINTENANCE_ALMOST_TIME_FOR_SERVICE":
+                newValue=20
+            elif status=="DISTANCE_DRIVEN_ALMOST_TIME_FOR_SERVICE":
+                newValue=30
+            elif status=="REGULAR_MAINTENANCE_TIME_FOR_SERVICE":
+                newValue=40
+            elif status=="REGULAR_MAINTENANCE_TIME_FOR_SERVICE":
+                newValue=50
+            elif status=="DISTANCE_DRIVEN_TIME_FOR_SERVICE":
+                newValue=60
+            elif status=="REGULAR_MAINTENANCE_OVERDUE_FOR_SERVICE":
+                newValue=70
+            elif status=="REGULAR_MAINTENANCE_OVERDUE_FOR_SERVICE":
+                newValue=80
+            elif status=="DISTANCE_DRIVEN_OVERDUE_FOR_SERVICE":
+                newValue=90
+            else:
+                newValue=100
+            UpdateSelectorSwitch(vin,SERVICESTATUS,"ServiceStatus",options, int(newValue), float(newValue)) 
         else:
-            newValue=100
-        UpdateSelectorSwitch(vin,SERVICESTATUS,"ServiceStatus",options, int(newValue), float(newValue)) 
-        
-        #update selector switch for Washerfluidlevel
-        UpdateLevel(Diagnostics["data"]["washerFluidLevelWarning"]["value"],WASHERFLUIDLEVEL,"WasherFluidLevel")
-    else:
-        Error("Updating Diagnostics failed")
+            Error("Updating Diagnostics failed")
+    except Exception as error:
+        Debug("Diagnostics call not (fully) supported")
+        Debug(error)
 
 def GetCommandAccessabilityStatus():
     Debug("GetCommandAccessibilityStatus() called")
