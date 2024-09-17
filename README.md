@@ -1,6 +1,8 @@
 # Domoticz VolvoRecharge Plugin
 domoticz plugin for Volvo Recharge Full EV or PHEV vehicles
 
+NEW: Experimental support for non electric vehicles
+
 domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your car sensors can be integrated into your home automation use cases.
 
 ## Features
@@ -31,7 +33,11 @@ This last switch has a very simple implementatiation. If you start climatisation
 And then there are several energy devices. Since the API does not allow reading the used or charged energy, these are just estimations: If the battery percentage rises or drops, the plugin assumes charging or using and so updates the kwh devices accordingly. homecharging is assumed if the battery percentage is rising and the location is within 25 meters from home.
 
 ## Instructions
-- go to the plugin 
+
+### To install: 
+- go to the plugin directory
+- give the command git clone https://github.com/akamming/Domoticz_VolvoRecharge_Plugin  
+- restart domoticz
 - (if you don't have a volco on call account) Create a Volvo on Call Username/password, which is linked to your vehicle. (basically: install the follow on call app on your handset and follow instructions)
 - Enter the username/password in the plugin config.
 - follow instructions on https://developer.volvocars.com/apis/docs/getting-started/ to register an app and copy/past the primary app key in the plugin config
@@ -43,8 +49,12 @@ And then there are several energy devices. Since the API does not allow reading 
    - Set openweather token (can be obtained by creating an account on this url https://home.openweathermap.org/users/sign_up )
    - Copy the lua script to your scripts/dzVents/scripts editor for some basic fun with this plugin (notifying on charging status, notifying on open window status, notifying on forgot to lock)
 
+### to Update
+- go the directory of your volvo plugin
+- give the "git pull" command
+
 ## Security
-This is a normal domoticz plugin, so as secure as every other one. However since with this plugin you can lock and unlock your car, check your if your domoticz install, especially if it's connected to the internet, if it is really secure.You don't want someone to hack your domoticz and then also have access to your car 
+This is a normal domoticz plugin, so as secure as every other one. However since with this plugin you can lock and unlock your car, check your if your domoticz install, especially if it's connected to the internet, if it is really secure. You don't want someone to hack your domoticz and then also have access to your car 
 
 ## Supported cars
 
