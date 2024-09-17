@@ -319,6 +319,7 @@ def VolvoAPI(url,mediatype):
 
 def CheckVehicleDetails(vin):
     global batteryPackSize
+    global vin
 
     Debug("CheckVehicleDetails called")
     try:
