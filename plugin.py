@@ -61,6 +61,7 @@ from math import sin, cos, sqrt, atan2, radians
 #Constants
 TIMEOUT=10 #timeout for API requests
 CLIMATIZATIONTIMEOUT=60 #can take longer when car is in deepsleep
+LOCKTIMEOUT=60 #can take longer when car is in deepsleep
 MINTIMEBETWEENLOGINATTEMPTS=600 #10 mins
 HOMECHARGINGRADIUS=0.025 # 25 meter (assume the car is using the home charger when with 25 meters)
 MAXUPDATEINTERVAL=24*3600 # Max number of seconds every sensor has to update when value has not changed, defaults to once per day
@@ -1232,7 +1233,7 @@ def HandleLockCommand(vin,idx,command):
                     "Authorization": "Bearer " + access_token
                 },
                 data=message,
-                timeout=TIMEOUT
+                timeout=LOCKTIMEOUT
             )
 
             Debug("\nResult:")
