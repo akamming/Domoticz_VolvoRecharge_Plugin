@@ -892,65 +892,71 @@ def GetRechargeStatus():
                   "SelectorStyle": "1"}
         UpdateSelectorSwitch(vin,CHARGINGSYSTEMSTATUS,"chargingSystemStatus",options, int(newValue), float(newValue))
 
-        #Update kwh counters
-        DeltaPercentageBattery=float(RechargeStatus["data"]["batteryChargeLevel"]["value"])-float(Devices[vin].Units[BATTERYCHARGELEVEL].sValue)
-        
-        if DeltaPercentageBattery<0:
-            Debug("Car is using Energy, we should increase the used energy counter")
-            IncreaseKWHMeter(vin,USEDKWH, "usedKWH", -DeltaPercentageBattery) 
-            IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
-        elif DeltaPercentageBattery>0:
-            Debug("Car is is gaining Energy, we should update the total charged counter")
-            IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", DeltaPercentageBattery) 
-            IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
+        #check if we have an existing batterypercentage
+        if (vin in Devices) and (BATTERYCHARGELEVEL in Devices[vin].Units):
+            Debug("We have previous batterychargelevelupdates, so we can caculate the diffence")
 
-            #Check if we are charging near home or public charging
-            try:
-                distance2home=float(Devices[vin].Units[DISTANCE2HOME].sValue)
-                if distance2home<=HOMECHARGINGRADIUS: #if the car is within the home charging radius, assume it is charging usiung the homecharger
-                    Debug ("Charging at home")
-                    IncreaseKWHMeter(vin,CHARGEDATHOME,"chargedAtHome",DeltaPercentageBattery)
-                    IncreaseKWHMeter(vin,CHARGEDPUBLIC,"chargedPublic",0)
-                    IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC", 0)
-                    IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC", 0)
-                else:
-                    Debug("Public Charging")
-                    IncreaseKWHMeter(vin,CHARGEDPUBLIC,"chargedPublic",DeltaPercentageBattery)
-                    IncreaseKWHMeter(vin,CHARGEDATHOME,"chargedAtHome",0)
-                    #Check which kind of charing
-                    if Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==10:
-                        ACCharging=True
-                    elif Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==20:
-                        ACCharging=False
-                    else:
-                        Debug("Unknown charging type")
-
-                    if ACCharging:
-                        IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC", DeltaPercentageBattery)
-                        IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC", 0)
-                    else:
-                        IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC", DeltaPercentageBattery)
-                        IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC", 0)
-                        
-            except KeyError:
-                Error("No Distance 2 home device, also not creating/updating athome/public charging kwh counters")
-        else:
-            #reset powerlevel if batterlevel has not changed for  5 mins
-            if TimeElapsedSinceLastUpdate(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate).total_seconds()>=300:
-                Debug("Car is not using or charging energy")
+            #Update kwh counters
+            DeltaPercentageBattery=float(RechargeStatus["data"]["batteryChargeLevel"]["value"])-float(Devices[vin].Units[BATTERYCHARGELEVEL].sValue)
+            
+            if DeltaPercentageBattery<0:
+                Debug("Car is using Energy, we should increase the used energy counter")
+                IncreaseKWHMeter(vin,USEDKWH, "usedKWH", -DeltaPercentageBattery) 
                 IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
+            elif DeltaPercentageBattery>0:
+                Debug("Car is is gaining Energy, we should update the total charged counter")
+                IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", DeltaPercentageBattery) 
                 IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
 
-                #If we know the distance to home, also reset chargedathome and chargedpublic
-                if DISTANCE2HOME in Devices[vin].Units:
-                    IncreaseKWHMeter(vin,CHARGEDATHOME,"chargedAtHome",0)
-                    IncreaseKWHMeter(vin,CHARGEDPUBLIC,"chargedPublic",0)
-                    IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC",0)
-                    IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC",0)
-                else:
-                    Debug("Not updating chargedathome and chargedpublic, cause distance2home not known")
+                #Check if we are charging near home or public charging
+                try:
+                    distance2home=float(Devices[vin].Units[DISTANCE2HOME].sValue)
+                    if distance2home<=HOMECHARGINGRADIUS: #if the car is within the home charging radius, assume it is charging usiung the homecharger
+                        Debug ("Charging at home")
+                        IncreaseKWHMeter(vin,CHARGEDATHOME,"chargedAtHome",DeltaPercentageBattery)
+                        IncreaseKWHMeter(vin,CHARGEDPUBLIC,"chargedPublic",0)
+                        IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC", 0)
+                        IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC", 0)
+                    else:
+                        Debug("Public Charging")
+                        IncreaseKWHMeter(vin,CHARGEDPUBLIC,"chargedPublic",DeltaPercentageBattery)
+                        IncreaseKWHMeter(vin,CHARGEDATHOME,"chargedAtHome",0)
+                        #Check which kind of charing
+                        if Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==10:
+                            ACCharging=True
+                        elif Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==20:
+                            ACCharging=False
+                        else:
+                            Debug("Unknown charging type")
+
+                        if ACCharging:
+                            IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC", DeltaPercentageBattery)
+                            IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC", 0)
+                        else:
+                            IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC", DeltaPercentageBattery)
+                            IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC", 0)
+                            
+                except KeyError:
+                    Error("No Distance 2 home device, also not creating/updating athome/public charging kwh counters")
             else:
-                Debug("timeout not expired yet, not resetting counters")
+                #reset powerlevel if batterlevel has not changed for  5 mins
+                if TimeElapsedSinceLastUpdate(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate).total_seconds()>=300:
+                    Debug("Car is not using or charging energy")
+                    IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
+                    IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
+
+                    #If we know the distance to home, also reset chargedathome and chargedpublic
+                    if DISTANCE2HOME in Devices[vin].Units:
+                        IncreaseKWHMeter(vin,CHARGEDATHOME,"chargedAtHome",0)
+                        IncreaseKWHMeter(vin,CHARGEDPUBLIC,"chargedPublic",0)
+                        IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC",0)
+                        IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC",0)
+                    else:
+                        Debug("Not updating chargedathome and chargedpublic, cause distance2home not known")
+                else:
+                    Debug("timeout not expired yet, not resetting counters")
+        else:
+            Debug("No previous batterypercentagemeasurement, ignoring the updates to KWH meters")
 
         
         #update Percentage Device
