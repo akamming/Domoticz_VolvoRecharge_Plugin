@@ -1215,10 +1215,12 @@ def HandleLockCommand(vin,idx,command):
     if refresh_token:
         url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/lock'
         cmd = "LOCKED"
+        message = None
         
         if command=='Off':
             url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/unlock'
             cmd = "UNLOCKED"
+            message = '{ "unlockDuration": 120 }'
 
         try:
             Debug("URL: {}".format(url))
@@ -1229,6 +1231,7 @@ def HandleLockCommand(vin,idx,command):
                     "vcc-api-key": vccapikey,
                     "Authorization": "Bearer " + access_token
                 },
+                data=message,
                 timeout=TIMEOUT
             )
 
