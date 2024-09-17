@@ -317,7 +317,7 @@ def VolvoAPI(url,mediatype):
         Error(error)
         return None
 
-def CheckVehicleDetails(vin):
+def CheckVehicleDetails():
     global batteryPackSize
     global vin
 
@@ -326,17 +326,17 @@ def CheckVehicleDetails(vin):
         vehicle = VolvoAPI( "https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin, "application/json")
         Info("retreived a "+str(vehicle["data"]["descriptions"]["model"])+", color "+str(vehicle["data"]["externalColour"])+", model year "+str(vehicle["data"]["modelYear"]))
         if vehicle:
-            if vehicle["data"]["fuelType"]=="ELECTRIC" or vehicle["data"]["fuelType"]=="FUEL/ELECTRIC" or vehicle["data"]["fuelType"]=="NONE":
-                Info("Setting BatteryCapacity to "+str(vehicle["data"]["batteryCapacityKWH"]))
+            try:
                 batteryPackSize=vehicle["data"]["batteryCapacityKWH"]
-            else:
-                Error("Selected vin is not an EV, not supported by this plugin")
-                vin=None
+                Info("Setting BatteryCapacity to "+str(vehicle["data"]["batteryCapacityKWH"]))
+            except:
+                Info("Selected vin is not an EV, disabling EV features")
+                batteryPackSize=None
 
     except Exception as error:
         Debug("CheckVehicleDEtails failed:")
         Debug(error)
-        vin=None
+        #vin=None
 
 def GetVin():
     global vin
@@ -367,7 +367,7 @@ def GetVin():
                 vin=None
 
             if vin:
-                CheckVehicleDetails(vin)
+                CheckVehicleDetails()
 
 
     except Exception as error:
@@ -1084,6 +1084,7 @@ def UpdateABRP():
 
 def Heartbeat():
     global lastupdate
+    global batteryPackSize
 
     Debug("Heartbeat() called")
     CheckRefreshToken()
@@ -1114,8 +1115,11 @@ def Heartbeat():
             GetCommandAccessabilityStatus() # check if we can update
             if (Devices[vin].Units[UNAVAILABLEREASON].nValue==0 or Devices[vin].Units[UNAVAILABLEREASON].nValue==40):
                 GetLocation() #Location must be known before GetRechargeStatus te detect local charging
-                GetRechargeStatus()
                 GetDoorWindowAndLockStatus()
+                if batteryPackSize:
+                    GetRechargeStatus()
+                else:
+                    Debug("No (Partial) EV features, don't call GetRechargeStatus")
                 if Devices[vin].Units[UNAVAILABLEREASON].nValue==0:
                     GetOdoMeter()
                     GetTyreStatus()
@@ -1124,14 +1128,14 @@ def Heartbeat():
                     GetEngine()
                     GetWarnings()
                 else:
-                    Debug("Car in use, only updating Location & RechargeStatus")
+                    Debug("Car in use, skipping several API calls")
             else:
                 Error("Car unavailable, check AVAILABILTYSTATUS sensor to see why the car is unavailable")
         else:
             Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
         
         #update ABRP SOC
-        if abrp_api_key and abrp_token:
+        if abrp_api_key and abrp_token and batteryPackSize:
             #Check if synmc device exists.
             if (not vin in Devices) or (not ABRPSYNC in Devices[vin].Units):
                 UpdateSwitch(vin,ABRPSYNC,"Connect to ABRP",1,"On")
@@ -1142,7 +1146,7 @@ def Heartbeat():
             else:
                 Debug("ABRPSyncing switched off")
         else:
-            Debug("No ABRP token and/or apikey, ignoring")
+            Debug("No ABRP token and/or apikey or no EV features detected, ignoring")
 
     else:
         Debug("No vin, do nothing")
