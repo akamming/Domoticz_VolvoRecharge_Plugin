@@ -57,6 +57,7 @@ import datetime
 from datetime import timezone
 import time
 from math import sin, cos, sqrt, atan2, radians
+import configparser
 
 #Constants
 TIMEOUT=10 #timeout for API requests
@@ -214,12 +215,50 @@ def LoginToVOC():
                     access_token = resp['access_token']
                     refresh_token = resp['refresh_token']
                     expirytimestamp=time.time()+resp['expires_in']
+
+                    #write to ini file
+                    WriteTokenToIniFile()
+
             except ValueError as exc:
                 Error("Login Failed: unable to process json response from https://volvoid.eu.volvocars.com/as/token.oauth2 : "+str(exc))
 
     except Exception as error:
         Error("Login failed, check internet connection:")
         Error(error)
+
+def ReadTokenFromIniFile():
+    global access_token,refresh_token,expirytimestamp
+
+    Debug("ReadTokenFromIniFile() called")
+
+    try:
+        config=configparser.ConfigParser()
+        config.read(Parameters["HomeFolder"]+'token.ini')
+        access_token=config["TOKEN"]["access_token"]
+        refresh_token=config["TOKEN"]["refresh_token"]
+        expirytimestamp=float(config["TOKEN"]["expirytimestamp"])
+        Debug("Token read from file")
+        return True
+
+    except KeyError as exc:
+        Info("Unable to read token from inifile, "+str(exc))
+        return False
+
+
+def WriteTokenToIniFile():
+    global access_token,refresh_token,expirytimestamp
+
+    Debug("WriteTokenToIniFile() called")
+
+    config=configparser.ConfigParser()
+    config["TOKEN"]={
+            'access_token' : access_token,
+            'refresh_token' : refresh_token,
+            'expirytimestamp' : expirytimestamp }
+
+    with open(Parameters["HomeFolder"]+'token.ini','w') as configfile:
+        config.write(configfile)
+
 
 def RefreshVOCToken():
     global access_token,refresh_token,expirytimestamp
@@ -241,6 +280,7 @@ def RefreshVOCToken():
             }, 
             timeout=TIMEOUT
         )
+        Debug(json.dumps(response.json(),indent=4))
         if response.status_code!=200:
             Error("VolvoAPI failed calling https://volvoid.eu.volvocars.com/as/token.oauth2, HTTP Statuscode "+str(response.status_code))
             access_token=None
@@ -253,6 +293,9 @@ def RefreshVOCToken():
             access_token = response.json()['access_token']
             refresh_token = response.json()['refresh_token']
             expirytimestamp=time.time()+response.json()['expires_in']
+
+            #save tokens in case of restarts
+            WriteTokenToIniFile()
 
     except Exception as error:
         Error("Refresh failed:")
@@ -1310,6 +1353,8 @@ class BasePlugin:
         lastupdate=time.time()-updateinterval-1 #force update
         expirytimestamp=time.time()-1 #force update
 
+        #try to get token from file
+        ReadTokenFromIniFile()
 
         #1st pass
         Heartbeat()
