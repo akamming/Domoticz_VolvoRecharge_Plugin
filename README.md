@@ -52,7 +52,9 @@ And then there are several energy devices. Since the API does not allow reading 
 ### 2 Factor Authentication
 Since it is expected that Volvo will  enforce 2FA in the near future, the plugin already supports 2FA as 2nd way of authentication. 
 
-For this you will have to run the authorize.py script in the plugin directory (give the command "python authorize.py"). The script will request  your username/password, your vcc key and your One Time Password which will be sent to your email or SMS during the process. This script will create a token.ini file, after which the plugin can be restarted to use the new connection setting. 
+For this you will have to run the authorize.py script in the plugin directory (give the command "python authorize.py"). The script will request  your username/password, your vcc key and your One Time Password which will be sent to your email or SMS during the process. This script will create a token.ini file, after which the plugin can be restarted to use the new connection setting.
+
+NOTE: In normal operations this has to be done only once, and after that the connection will remain. However is the token expires and on that moment domoticz is down, it will not renew in time and you have to re-authenticate using the authorize.py script. 
 
 ### Update instructions
 - go the directory of your volvo plugin
