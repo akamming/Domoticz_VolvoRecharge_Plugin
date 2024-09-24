@@ -263,7 +263,7 @@ def WriteTokenToIniFile():
 def RefreshVOCToken():
     global access_token,refresh_token,expirytimestamp
 
-    Debug("RefreshToken() called")
+    Debug("RefreshVOCToken() called")
     
     try:
         response = requests.post(
@@ -280,12 +280,13 @@ def RefreshVOCToken():
             }, 
             timeout=TIMEOUT
         )
-        Debug(json.dumps(response.json(),indent=4))
         if response.status_code!=200:
             Error("VolvoAPI failed calling https://volvoid.eu.volvocars.com/as/token.oauth2, HTTP Statuscode "+str(response.status_code))
+            Error(json.dumps(response.json(),indent=4))
             access_token=None
             refresh_token=None
         else:
+            Debug(json.dumps(response.json(),indent=4))
             Info("Refreshed token successful!")
             Debug("Volvo responded: "+str(response.json()))
 
@@ -312,10 +313,11 @@ def CheckRefreshToken():
             Debug("Not refreshing token, expires in "+str(expirytimestamp-time.time())+" seconds")
 
         #get a vin if we don't have one
-        if vin:
-            Debug("We already have a vin")
-        else:
-            GetVin()
+        if access_token:
+            if vin:
+                Debug("We already have a vin")
+            else:
+                GetVin()
     else:
         if time.time()-lastloginattempttimestamp>=MINTIMEBETWEENLOGINATTEMPTS:
             Debug("Nog logged in, attempting to login")
@@ -1043,7 +1045,7 @@ def DistanceBetweenCoords(coords1,coords2):
 def getOutSideTemperature(longitude,latitude):
     global access_token,refresh_token,expirytimestamp
 
-    Debug("RefreshToken() called")
+    Debug("GetOutsideTemperature() called")
     
     try:
         url="https://api.openweathermap.org/data/2.5/weather?lat="+str(latitude)+"&lon="+str(longitude)+"&appid="+str(openweather_token)+"&units=metric"
