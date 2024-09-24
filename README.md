@@ -1,5 +1,5 @@
 # Domoticz VolvoRecharge Plugin
-domoticz plugin for Volvo Recharge Full EV or PHEV vehicles
+domoticz plugin for Volvo vehicles
 
 NEW: 2 Factor Authentication
 
