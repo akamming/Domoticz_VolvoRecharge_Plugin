@@ -26,7 +26,6 @@ auth_session = requests.session()
 auth_session.headers = {
     "authorization": "Basic aDRZZjBiOlU4WWtTYlZsNnh3c2c1WVFxWmZyZ1ZtSWFEcGhPc3kxUENhVXNpY1F0bzNUUjVrd2FKc2U0QVpkZ2ZJZmNMeXc=",
     'user-agent': 'okhttp/4.10.0',
-    #"User-Agent": "vca-android/" + util.get_volvo_app_version(),
     "Accept-Encoding": "gzip",
     "Content-Type": "application/json; charset=utf-8"
 }
