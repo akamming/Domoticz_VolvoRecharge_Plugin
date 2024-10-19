@@ -78,6 +78,7 @@ The plugin has been reported to work for
 - Volco C40 Pure Electric
 - Volvo C40 Pure Electric Twin
 - Volvo XC60 PHEV
+- V60 CC -22 with B4 engine
 
 ### Non electric Vehicles
 
