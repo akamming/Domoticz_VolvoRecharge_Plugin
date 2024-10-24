@@ -40,7 +40,7 @@ And then there are several energy devices. Since the API does not allow reading 
 - restart domoticz
 - (if you don't have a volco on call account) Create a Volvo on Call Username/password, which is linked to your vehicle. (basically: install the follow on call app on your handset and follow instructions)
 - follow instructions on https://developer.volvocars.com/apis/docs/getting-started/ to register an app and copy/past the primary app vcc key in the plugin config
-- Enter your username/password in the plugin config.
+- Enter your username/password in the plugin config. (This seems to be depracated, currently Volvo enforces 2FA, see sector 2Factor authentication)
 - Optional: 
    - Set a VIN if you connected more than one car to your volvo account. If empty the plugin will use the 1st car attached to your Volvo account
    - Set an update interval. If you don't pay Volvo for the API, you're only allowed to do 10.000 calls per day.. so make sure not to set the update interval too low. The plugin does 4 calls on every interval.
@@ -50,7 +50,7 @@ And then there are several energy devices. Since the API does not allow reading 
    - Copy the lua script to your scripts/dzVents/scripts editor for some basic fun with this plugin (notifying on charging status, notifying on open window status, notifying on forgot to lock)
 
 ### 2 Factor Authentication
-Since it is expected that Volvo will  enforce 2FA in the near future, the plugin already supports 2FA as 2nd way of authentication. 
+The plugin already supports 2FA as 2nd way of authentication. 
 
 For this you will have to run the authorize.py script in the plugin directory (give the command "python authorize.py"). The script will request  your username/password, your vcc key and your One Time Password which will be sent to your email or SMS during the process. This script will create a token.ini file, after which the plugin can be restarted to use the new connection setting.
 
