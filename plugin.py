@@ -325,6 +325,11 @@ def CheckRefreshToken():
             LoginToVOC()
             if refresh_token:
                 GetVin()
+            else:
+                # Try from file
+                ReadTokenFromIniFile()
+                if refresh_token:
+                    GetVin()
         else:
             Debug("Not logged in, retrying in "+str(MINTIMEBETWEENLOGINATTEMPTS-(time.time()-lastloginattempttimestamp))+" seconds")
 
