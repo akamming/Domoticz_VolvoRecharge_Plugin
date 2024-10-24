@@ -330,6 +330,8 @@ def CheckRefreshToken():
                 ReadTokenFromIniFile()
                 if refresh_token:
                     GetVin()
+                else:
+                    Error("Unable to login to Volvo, check your authorisation settings")
         else:
             Debug("Not logged in, retrying in "+str(MINTIMEBETWEENLOGINATTEMPTS-(time.time()-lastloginattempttimestamp))+" seconds")
 
