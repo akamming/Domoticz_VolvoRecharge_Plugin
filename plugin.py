@@ -5,7 +5,7 @@
 """
 <plugin key="VolvoEV" name="Volvo Recharge (Full EV or PHEV)" author="akamming" version="0.1.0" wikilink="http://www.domoticz.com/wiki/plugins/plugin.html" externallink="https://github.com/akamming/Domoticz_VolvoRecharge_Plugin">
     <description>
-        <h2>Volvo Recharge (Full EV) plugin</h2><br/>
+        <h2>Volvo Recharge (Full EV or PHEV) plugin</h2><br/>
         domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your car sensors can be integrated into your home automation use cases.
         <h3>Features</h3>
         <ul style="list-style-type:square">
@@ -531,12 +531,12 @@ def UpdateDoorOrWindow(vin,idx,name,value):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=11, DeviceID=vin, Used=False).Create()
 
     try:
-        if value=="OPEN" and Devices[vin].Units[idx].nValue==0:
+        if value=="OPEN" and (Devices[vin].Units[idx].nValue==0 or TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()>MAXUPDATEINTERVAL):
             Devices[vin].Units[idx].nValue = 1
             Devices[vin].Units[idx].sValue = "Open"
             Devices[vin].Units[idx].Update(Log=True)
             Domoticz.Log("Door/Window Contact ("+Devices[vin].Units[idx].Name+")")
-        elif value=="CLOSED" and Devices[vin].Units[idx].nValue==1:
+        elif value=="CLOSED" and (Devices[vin].Units[idx].nValue==1 or TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()>MAXUPDATEINTERVAL):
             Devices[vin].Units[idx].nValue = 0
             Devices[vin].Units[idx].sValue = "Closed"
             Devices[vin].Units[idx].Update(Log=True)
