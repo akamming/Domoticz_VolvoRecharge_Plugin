@@ -60,7 +60,7 @@ from math import sin, cos, sqrt, atan2, radians
 import configparser
 
 #Constants
-TIMEOUT=10 #timeout for API requests
+TIMEOUT=60 #timeout for API requests
 CLIMATIZATIONTIMEOUT=60 #can take longer when car is in deepsleep
 LOCKTIMEOUT=60 #can take longer when car is in deepsleep
 MINTIMEBETWEENLOGINATTEMPTS=600 #10 mins
@@ -161,6 +161,9 @@ CHARGINGPUBLIC=71
 AVAILABILITYSTATUS=72
 UNAVAILABLEREASON=73
 OUTSIDETEMP=74
+HONK=75
+FLASH=76
+HONKFLASH=77
 
 def Debug(text):
     if debugging:
@@ -421,6 +424,7 @@ def GetVin():
 
             if vin:
                 CheckVehicleDetails()
+                VolvoAPI('https://api.volvocars.com/connected-vehicle/v2/vehicles/'+vin+'/commands', 'application/json')
 
 
     except Exception as error:
@@ -505,6 +509,11 @@ def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
             Debug("Not Updating Selector Switch ("+Devices[vin].Units[idx].Name+")")
     except KeyError:
         Error("Unable to update Selector device ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
+
+def CreatePushButton(vn,idx,name):
+    Debug ("CreatePushButton("+str(vn)+","+str(idx)+","+str(name)+") called")
+    if (not vn in Devices) or (not idx in Devices[vn].Units):
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=1, DeviceID=vn, Used=False).Create()
 
 
 def UpdateSwitch(vn,idx,name,nv,sv):
@@ -1150,7 +1159,6 @@ def UpdateABRP():
         Error("Error updating ABRP SOC")
         Error(error)
 
-
 def Heartbeat():
     global lastupdate
     global batteryPackSize
@@ -1159,6 +1167,10 @@ def Heartbeat():
     CheckRefreshToken()
 
     if vin:
+        CreatePushButton(vin,FLASH,"Flash")
+        CreatePushButton(vin,HONK,"Honk")
+        CreatePushButton(vin,HONKFLASH,"Honk and Flash")
+
         #handle climatization logic
         if (not vin in Devices) or (not CLIMATIZATION in Devices[vin].Units):
             #no Climate device, let's create
@@ -1221,7 +1233,7 @@ def Heartbeat():
         Debug("No vin, do nothing")
 
 def HandleClimatizationCommand(vin,idx,command):
-    global climatizationstoptimestamp,climatizationoperationid
+    global climatizationstoptimestamp
 
     if refresh_token:
         url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/climatization-start'
@@ -1267,10 +1279,7 @@ def HandleClimatizationCommand(vin,idx,command):
             Error("handleclimatization command failed:")
             Error(err)
 
-
 def HandleLockCommand(vin,idx,command):
-    global climatizationstoptimestamp,climatizationoperationid
-
     if refresh_token:
         url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/lock'
         cmd = "LOCKED"
@@ -1309,6 +1318,39 @@ def HandleLockCommand(vin,idx,command):
 
         except Exception as error:
             Error("lock/unlock command failed:")
+            Error(error)
+
+def HandleCommand(vin,command):
+    if refresh_token:
+        url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/' + command
+
+        try:
+            Debug("URL: {}".format(url))
+            status = requests.post(
+                url,
+                headers= {
+                    "Content-Type": "application/json",
+                    "vcc-api-key": vccapikey,
+                    "Authorization": "Bearer " + access_token
+                },
+                timeout=LOCKTIMEOUT
+            )
+
+            Debug("\nResult:")
+            Debug(status)
+            sjson = json.dumps(status.json(), indent=4)
+            Debug("\nResult JSON:")
+            Debug(sjson)
+            if status.status_code==200:
+                if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
+                    Debug("Command succeeded")
+                else:
+                    Error("command failed, API returned code "+status.json()["data"]["invokeStatus"])
+            else:
+                Error("command failed, webserver returned "+str(status.status_code)+", result: "+sjson)
+
+        except Exception as error:
+            Error("command exception:")
             Error(error)
 
 
@@ -1358,7 +1400,7 @@ class BasePlugin:
         updateinterval=int(Parameters["Mode2"])
         if (updateinterval<100):
             Info("Updateinterval too low, correcting to 100 secs")
-            updateinterval=99 # putting is too exact 80 might sometimes lead to update after 100 secs 
+            updateinterval=99 # putting it too exact 100 might sometimes lead to update after 110 secs 
         lastupdate=time.time()-updateinterval-1 #force update
         expirytimestamp=time.time()-1 #force update
 
@@ -1391,8 +1433,17 @@ class BasePlugin:
                 UpdateSwitch(vin,ABRPSYNC,"ABRPSYNC",1,Command)
             else:
                 UpdateSwitch(vin,ABRPSYNC,"ABRPSYNC",0,Command)
+        elif Unit==HONK:
+            Debug("Send Honk command")
+            HandleCommand(DeviceID,"honk")
+        elif Unit==FLASH:
+            Debug("Send Flash command")
+            HandleCommand(DeviceID,"flash")
+        elif Unit==HONKFLASH:
+            Debug("Send Honk command")
+            HandleCommand(DeviceID,"honk-flash")
         else:
-            Debug("uknown command")
+            Debug("unknown command")
 
     def onNotification(self, Name, Subject, Text, Status, Priority, Sound, ImageFile):
         Debug("Notification: " + Name + "," + Subject + "," + Text + "," + Status + "," + str(Priority) + "," + Sound + "," + ImageFile)
