@@ -16,6 +16,7 @@ domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your
 - start/stop climatisation (https://developer.volvocars.com/apis/connected-vehicle/endpoints/climate/)
 - Retrieve Vehicle location (https://developer.volvocars.com/apis/location/v1/endpoints/location/#get-location)
 - Retrieves Vehicle warnings (https://developer.volvocars.com/apis/connected-vehicle/v2/endpoints/warnings/)
+- Honk/Flash commands commands (https://developer.volvocars.com/apis/connected-vehicle/v2/endpoints/lights-sound/), this requires AAOS cars to be at least on OTA 3.3.16
 
 ### Other
 - syncs SOC and charging status to ABRP (https://documenter.getpostman.com/view/7396339/SWTK5a8w)
