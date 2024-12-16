@@ -164,6 +164,7 @@ OUTSIDETEMP=74
 HONK=75
 FLASH=76
 HONKFLASH=77
+LOCKREDUCEDGUARD=78
 
 def Debug(text):
     if debugging:
@@ -1170,6 +1171,7 @@ def Heartbeat():
         CreatePushButton(vin,FLASH,"Flash")
         CreatePushButton(vin,HONK,"Honk")
         CreatePushButton(vin,HONKFLASH,"Honk and Flash")
+        CreatePushButton(vin,LOCKREDUCEDGUARD,"Lock with Reduced Guard")
 
         #handle climatization logic
         if (not vin in Devices) or (not CLIMATIZATION in Devices[vin].Units):
@@ -1336,8 +1338,8 @@ def HandleCommand(vin,command):
                 timeout=LOCKTIMEOUT
             )
 
-            Debug("\nResult:")
-            Debug(status)
+            Debug("\nResult from "+str(url)+" is "+str(status))
+            #Debug(status)
             sjson = json.dumps(status.json(), indent=4)
             Debug("\nResult JSON:")
             Debug(sjson)
@@ -1442,6 +1444,9 @@ class BasePlugin:
         elif Unit==HONKFLASH:
             Debug("Send Honk command")
             HandleCommand(DeviceID,"honk-flash")
+        elif Unit==LOCKREDUCEDGUARD:
+            Debug("Send Lock Reduced Guard command")
+            HandleCommand(DeviceID,"lock-reduced-guard")
         else:
             Debug("unknown command")
 
