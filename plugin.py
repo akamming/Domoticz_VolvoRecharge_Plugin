@@ -496,6 +496,22 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
     except KeyError:
         Error("Unable to update KWH device ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
+def UpdateTextSensor(vn,idx,name,text):
+    if (not vn in Devices) or (not idx in Devices[vn].Units):
+        Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=243, Subtype=19, DeviceID=vn, Used=False).Create()
+
+    try:
+        if text!=Devices[vin].Units[idx].sValue or TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()>MAXUPDATEINTERVAL :
+            Devices[vin].Units[idx].sValue=text 
+            Devices[vin].Units[idx].Type=243
+            Devices[vin].Units[idx].SubType=19
+            Devices[vin].Units[idx].Update(Log=True)
+            Domoticz.Log("TextSensor ("+Devices[vin].Units[idx].Name+")")
+        else:
+            Debug("Not updating TextSensor ("+Devices[vin].Units[idx].Name+")")
+    except KeyError:
+        Error("Unable to update Text Sensor ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
+
 def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options, Used=False).Create()
@@ -634,30 +650,7 @@ def GetDoorWindowAndLockStatus():
         Error("Updating Doors failed")
 
 def UpdateTyrePressure(status,idx,name):
-    #Calculate Charging Connect Status value
-    newValue=0
-    if status=="NO_WARNING":
-        newValue=0
-    elif status=="VERY_LOW_PRESSURE":
-        newValue=10
-    elif status=="LOW_PRESSURE":
-        newValue=20
-    elif status=="HIGH_PRESSURE":
-        newValue=30
-    elif status=="UNSPECIFIED":
-        newValue=40
-    else:
-        Error("Unknown TyrePressureStatus")
-        newValue=50
-
-    #update selector switch for Charging Connection Status
-    options = {"LevelActions": "|||",
-              "LevelNames": "No Warning|VeryLow|Low|High|Unspecified|Unknown",
-              "LevelOffHidden": "false",
-              "SelectorStyle": "1"}
-    UpdateSelectorSwitch(vin,idx,name,options,
-                 int(newValue),
-                 float(newValue))
+    UpdateTextSensor(vin,idx,name,status)
 
 def GetTyreStatus():
     Debug("GetTyreStatus() called")
@@ -672,26 +665,7 @@ def GetTyreStatus():
         Error("Updating Tyre Status failed")
 
 def UpdateWarning(status,idx,name):
-    #Calculate Charging Connect Status value
-    newValue=0
-    if status=="NO_WARNING":
-        newValue=0
-    elif status=="FAILURE":
-        newValue=10
-    elif status=="UNSPECIFIED":
-        newValue=20
-    else:
-        Error("Unknown Warning Value")
-        newValue=30
-
-    #update selector switch for Charging Connection Status
-    options = {"LevelActions": "|||",
-              "LevelNames": "No Warning|Failure|Unspecified|Unknown",
-              "LevelOffHidden": "false",
-              "SelectorStyle": "1"}
-    UpdateSelectorSwitch(vin,idx,name,options,
-                 int(newValue),
-                 float(newValue))
+    UpdateTextSensor(vin,idx,name,status)
 
 def GetWarnings():
     Debug("GetWarningStatus() called")
@@ -725,30 +699,7 @@ def GetWarnings():
         Error("Updating Tyre Status failed")
 
 def UpdateLevel(status,idx,name):
-    #Calculate Charging Connect Status value
-    newValue=0
-    if status=="NO_WARNING":
-        newValue=0
-    elif status=="TOO_LOW":
-        newValue=10
-    elif status=="TOO_HIGH":
-        newValue=20
-    elif status=="SERVICE_REQUIRED":
-        newValue=30
-    elif status=="UNSPECIFIED":
-        newValue=40
-    else:
-        Error("Uwknown Oil or Coolantlevel status")
-        newValue=50
-
-    #update selector switch for Charging Connection Status
-    options = {"LevelActions": "|||",
-              "LevelNames": "No Warning|Too Low|Too High|Service Required|Unspecified|Unknown",
-              "LevelOffHidden": "false",
-              "SelectorStyle": "1"}
-    UpdateSelectorSwitch(vin,idx,name,options,
-                 int(newValue),
-                 float(newValue))
+    UpdateTextSensor(vin,idx,name,status)
 
 def GetEngineStatus():
     Debug("GetEngineStatus() called")
@@ -792,38 +743,7 @@ def GetDiagnostics():
             SafeUpdateSensor(vin,MONTHSTOSERVICE,"MonthsToService",243,31,{'Custom':'1;months'},Diagnostics,"timeToService")
 
             #update selector switch for ServiceStatus
-            try:
-                options = {"LevelActions": "|||",
-                          "LevelNames": "No Warning|Regular Maintenance Almost|Engine Hours Almost|Distance Driven Almost|Regular Maintenance|Engine Hours|Distance Driven|Regular Maintenance Overdue|Engine Hours Overdue|Distance Driven Overdue|Unknown",
-                          "LevelOffHidden": "false",
-                          "SelectorStyle": "1"}
-                status=Diagnostics["data"]["serviceWarning"]["value"]
-                newValue=0
-                if status=="NO_WARNING":
-                    newValue=0
-                elif status=="REGULAR_MAINTENANCE_ALMOST_TIME_FOR_SERVICE":
-                    newValue=10
-                elif status=="REGULAR_MAINTENANCE_ALMOST_TIME_FOR_SERVICE":
-                    newValue=20
-                elif status=="DISTANCE_DRIVEN_ALMOST_TIME_FOR_SERVICE":
-                    newValue=30
-                elif status=="REGULAR_MAINTENANCE_TIME_FOR_SERVICE":
-                    newValue=40
-                elif status=="REGULAR_MAINTENANCE_TIME_FOR_SERVICE":
-                    newValue=50
-                elif status=="DISTANCE_DRIVEN_TIME_FOR_SERVICE":
-                    newValue=60
-                elif status=="REGULAR_MAINTENANCE_OVERDUE_FOR_SERVICE":
-                    newValue=70
-                elif status=="REGULAR_MAINTENANCE_OVERDUE_FOR_SERVICE":
-                    newValue=80
-                elif status=="DISTANCE_DRIVEN_OVERDUE_FOR_SERVICE":
-                    newValue=90
-                else:
-                    newValue=100
-                UpdateSelectorSwitch(vin,SERVICESTATUS,"ServiceStatus",options, int(newValue), float(newValue)) 
-            except KeyError:
-                Debug("ServiceStatus not supported")
+            UpdateTextSensor(vin,SERVICESTATUS,"ServiceStatus", Diagnostics["data"]["serviceWarning"]["value"])
         else:
             Error("Updating Diagnostics failed")
     except Exception as error:
@@ -915,55 +835,12 @@ def GetRechargeStatus():
         UpdateSensor(vin,ESTIMATEDCHARGINGTIME,"estimatedChargingTime",243,31,{'Custom':'1;min'},
                      int(RechargeStatus["data"]["estimatedChargingTime"]["value"]),
                      float(RechargeStatus["data"]["estimatedChargingTime"]["value"]))
-     
-        #Calculate Charging Connect Status value
-        connstatus=RechargeStatus["data"]["chargingConnectionStatus"]["value"] 
-        newValue=0
-        if connstatus=="CONNECTION_STATUS_DISCONNECTED":
-            newValue=0
-        elif connstatus=="CONNECTION_STATUS_CONNECTED_AC":
-            newValue=10
-        elif connstatus=="CONNECTION_STATUS_CONNECTED_DC":
-            newValue=20
-        elif connstatus=="CONNECTION_STATUS_UNSPECIFIED":
-            newValue=30
-        else:
-            newValue=30
 
-        #update selector switch for Charging Connection Status
-        options = {"LevelActions": "|||",
-                  "LevelNames": "Disconnected|ACConnected|DCConnected|Unspecified",
-                  "LevelOffHidden": "false",
-                  "SelectorStyle": "1"}
-        UpdateSelectorSwitch(vin,CHARGINGCONNECTIONSTATUS,"chargingConnectionStatus",options,
-                     int(newValue),
-                     float(newValue))
+        #Calculate Charging Connect Status value
+        UpdateTextSensor(vin,CHARGINGCONNECTIONSTATUS,"chargingConnectionStatus", RechargeStatus["data"]["chargingConnectionStatus"]["value"])
 
         #Calculate Charging system Status value
-        chargestatus=RechargeStatus["data"]["chargingSystemStatus"]["value"]
-        newValue=0
-        if chargestatus=="CHARGING_SYSTEM_IDLE":
-            newValue=0
-        elif chargestatus=="CHARGING_SYSTEM_CHARGING":
-            newValue=10
-        elif chargestatus=="CHARGING_SYSTEM_DONE":
-            newValue=20
-        elif chargestatus=="CHARGING_SYSTEM_FAULT":
-            newValue=30
-        elif chargestatus=="CHARGING_SYSTEM_SCHEDULED":
-            newValue=40
-        elif chargestatus=="CHARGING_SYSTEM_UNSPECIFIED":
-            newValue=50
-        else:
-            Error("Invalid Charging system status received "+chargestatus)
-            newValue=50
-
-        #update selector switch for Charging Connection Status
-        options = {"LevelActions": "|||",
-                  "LevelNames": "Idle|Charging|Done|Fault|Scheduled|Unspecified",
-                  "LevelOffHidden": "false",
-                  "SelectorStyle": "1"}
-        UpdateSelectorSwitch(vin,CHARGINGSYSTEMSTATUS,"chargingSystemStatus",options, int(newValue), float(newValue))
+        UpdateTextSensor(vin,CHARGINGSYSTEMSTATUS,"chargingSystemStatus", RechargeStatus["data"]["chargingSystemStatus"]["value"])
 
         #check if we have an existing batterypercentage
         if (vin in Devices) and (BATTERYCHARGELEVEL in Devices[vin].Units):
