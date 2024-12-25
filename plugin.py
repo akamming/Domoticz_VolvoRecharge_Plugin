@@ -755,50 +755,12 @@ def GetCommandAccessabilityStatus():
     CAStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/command-accessibility","application/json")
     if CAStatus:
         Debug(json.dumps(CAStatus))
-        
-        #update selector switch for AvailabilityStatus
-        options = {"LevelActions": "|||",
-                  "LevelNames": "Available|Unavailable|Unspecified|Unknown",
-                  "LevelOffHidden": "false",
-                  "SelectorStyle": "1"}
-        status=CAStatus["data"]["availabilityStatus"]["value"]
-        newValue=0
-        if status=="AVAILABLE":
-            newValue=0
-        elif status=="UNAVAILABLE":
-            newValue=10
-        elif status=="UNSPECIFIED":
-            newValue=20
-        else:
-            Error("Unknow command accessibilitystatus: "+json.dumps(CAStatus))
-            newValue=30
-        UpdateSelectorSwitch(vin,AVAILABILITYSTATUS,"availabilityStatus",options, int(newValue), float(newValue)) 
-        if newValue>0:
-            Debug("Car offline, API reports "+json.dumps(CAStatus))
-        
-        #update selector switch for AvailabilityReason
-        options = {"LevelActions": "|||",
-                  "LevelNames": "N.A.|Unspecified|No Internet|Power Save Mode|Car In Use|Unknown",
-                  "LevelOffHidden": "false",
-                  "SelectorStyle": "1"}
-        newValue=0
+        UpdateTextSensor(vin,AVAILABILITYSTATUS,"availabilityStatus", CAStatus["data"]["availabilityStatus"]["value"])
         try:
-            status=CAStatus["data"]["availabilityStatus"]["unavailableReason"]
-            if status=="UNSPECIFIED":
-                newValue=10
-            elif status=="NO_INTERNET":
-                newValue=20
-            elif status=="POWER_SAVING_MODE":
-                newValue=30
-            elif status=="CAR_IN_USE":
-                newValue=40
-            else:
-                Error("Unknow command accessibilityreason: "+json.dumps(CAStatus))
-                newValue=50
-        except KeyError:
-            Debug("No accessibilityreason, setting value to 0")
-            newValue=0
-        UpdateSelectorSwitch(vin,UNAVAILABLEREASON,"unavailableReason",options, int(newValue), float(newValue)) 
+           UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", CAStatus["data"]["availabilityStatus"]["unavailableReason"])
+        except Exception as error:
+            Debug("no unavaiblereason found")
+            UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", "N.A.")
     else:
         Error("Updating Command Accessability failed")
 
@@ -1073,7 +1035,7 @@ def Heartbeat():
             Debug("Updating Devices")
             lastupdate=time.time()
             GetCommandAccessabilityStatus() # check if we can update
-            if (Devices[vin].Units[UNAVAILABLEREASON].nValue==0 or Devices[vin].Units[UNAVAILABLEREASON].nValue==40):
+            if (Devices[vin].Units[AVAILABILITYSTATUS].sValue=="AVAILABLE" or Devices[vin].Units[UNAVAILABLEREASON].sValue=="CAR_IN_USE"):
                 GetLocation() #Location must be known before GetRechargeStatus te detect local charging
                 GetDoorWindowAndLockStatus()
                 if batteryPackSize:
