@@ -759,8 +759,8 @@ def GetCommandAccessabilityStatus():
         try:
            UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", CAStatus["data"]["availabilityStatus"]["unavailableReason"])
         except Exception as error:
-            Debug("no unavaiblereason found")
-            UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", "N.A.")
+            Debug("no unavaible reason found, so car is online")
+            UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", "Online")
     else:
         Error("Updating Command Accessability failed")
 
