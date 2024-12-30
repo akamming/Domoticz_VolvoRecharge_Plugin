@@ -163,6 +163,7 @@ HONK=75
 FLASH=76
 HONKFLASH=77
 LOCKREDUCEDGUARD=78
+LASTKNOWNLOCATION=79
 
 def Debug(text):
     if debugging:
@@ -940,6 +941,48 @@ def UpdateABRP():
         Error("Error updating ABRP SOC")
         Error(error)
 
+def GetFriendlyAdress(lattitude,longitude):
+    FriendlyAdress=str(lattitude)+","+str(longitude)
+    if google_api_key:
+        FriendlyAdress="Friendly Adress"
+
+    return FriendlyAdress
+
+def UpdateLastLocationSensor(lattitude,longitude,odometer,kwhmeter):
+    CurrentLocation=str(lattitude)+";"+str(longitude)+";"+GetFriendlyAdress(lattitude,longitude)+";"+str(odometer)+";"+str(kwhmeter)
+    Debug(CurrentLocation)
+    UpdateTextSensor(vin,LASTKNOWNLOCATION,"Last Known Location",CurrentLocation)
+
+def UpdateLastKnownLocation():
+    #build up line
+    currentLattitude=float(Devices[vin].Units[LATTITUDE].sValue)
+    currentLongitude=float(Devices[vin].Units[LONGITUDE].sValue)
+    currentOdometer=Devices[vin].Units[ODOMETER].nValue
+    usedkwh=Devices[vin].Units[USEDKWH].sValue.split(";")
+    currentKWHMeter=float(usedkwh[1])
+
+    if (not vin in Devices) or (not LASTKNOWNLOCATION in Devices[vin].Units):
+        Debug("LastKnownLocation sensor not there, creating")
+        UpdateLastLocationSensor(currentLattitude,currentLongitude,currentOdometer,currentKWHMeter)
+    else:
+        #Get old values
+        oldLocation=Devices[vin].Units[LASTKNOWNLOCATION].sValue.split(";")
+        oldLattitude=float(oldLocation[0])
+        oldLongitude=float(oldLocation[1])
+        oldOdometer=int(oldLocation[3])
+        oldKWHmeter=float(oldLocation[4])
+
+        Triplength=currentOdometer-oldOdometer
+        TripUsage=currentKWHMeter-oldKWHmeter
+        Debug("Car drove "+str(Triplength)+" and used "+str(TripUsage)+" kwh's")
+        UpdateLastLocationSensor(currentLattitude,currentLongitude,currentOdometer,currentKWHMeter)
+        
+        if (currentLattitude==oldLattitude and currentLongitude==oldLongitude):
+            Debug("Car is still on same location, do nothing")
+        else:
+            Debug("Car moved")
+        
+
 def Heartbeat():
     global lastupdate
     global batteryPackSize
@@ -984,12 +1027,13 @@ def Heartbeat():
                 else:
                     Debug("No (Partial) EV features, don't call GetRechargeStatus")
                 if Devices[vin].Units[UNAVAILABLEREASON].nValue==0:
-                    GetOdoMeter()
+                    GetOdoMeter() 
                     GetTyreStatus()
                     GetDiagnostics()
                     GetEngineStatus() 
                     GetEngine()
                     GetWarnings()
+                    UpdateLastKnownLocation()
                 else:
                     Debug("Car in use, skipping several API calls")
             else:
@@ -1143,7 +1187,7 @@ class BasePlugin:
         return
 
     def onStart(self):
-        global vocuser,vocpass,vccapikey,debugging,info,lastupdate,updateinterval,expirytimestamp,abrp_api_key,abrp_token,openweather_token
+        global google_api_key,vccapikey,debugging,info,lastupdate,updateinterval,expirytimestamp,abrp_api_key,abrp_token,openweather_token
         Debug("OnStart called")
         
         #read params
