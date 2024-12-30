@@ -998,7 +998,7 @@ def UpdateLastKnownLocation():
             UpdateLastLocationSensor(currentLattitude,currentLongitude,currentFriendlyAdress,currentOdometer,currentKWHMeter)
 
             #Log to the triplog
-            Tripline=str(datetime.datetime.now())+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+"\n"
+            Tripline=str(datetime.datetime.now())+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+","+str(currentOdometer)+"\n"
             filename=Parameters["HomeFolder"]+"triplog.csv"
             f=open(filename,"a")
             f.write(Tripline)
