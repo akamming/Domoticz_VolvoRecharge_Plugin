@@ -1,9 +1,9 @@
 # Domoticz VolvoRecharge Plugin
 domoticz plugin for Volvo vehicles
-
-NEW: 2 Factor Authentication
-
 domoticzwrapper around Volvo API (https://developer.volvocars.com/apis/) so your car sensors can be integrated into your home automation use cases.
+
+NEW: Triplog support (Still experimental)
+
 
 ## Features
 
