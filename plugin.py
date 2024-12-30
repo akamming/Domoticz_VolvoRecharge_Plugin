@@ -17,8 +17,8 @@
         pls look at the above links in API, Volvo does a much better deal describing it than i can
         <h3>Configuration</h3>
         <ul style="list-style-type:square">
-            <li>Use your Volvo on Call Username/password, which is linked to your vehicle.</li>
             <li>Register an app on https://developer.volvocars.com/apis/docs/getting-started/ and copy/past the primary app key in the config below</li>
+            <li>Run the authorize.py script to create a valid token.ini file</li>
             <li>Optional: Set a VIN if you connected more than one car to your volvo account. If empty the plugin will use the 1st car attached to your Volvo account</li>
             <li>Optional: Set Openweather API: Will also get temperature around the car (if your domoticz location settings are set)</li>
             <li>Optional: Set ABRP APIkey/token: Will link you car to ABRP, so ABRP has the actual battery percentage</li>
@@ -26,13 +26,12 @@
         </ul>
     </description>
     <params>
-        <param field="Username" label="Volvo On Call Username" required="true"/>
-        <param field="Password" label="Volvo On Call Password" required="true" password="true"/>
         <param field="Mode1" label="Primary VCC API Key" required="true"/>
         <param field="Mode2" label="update interval in secs" required="true" default="900"/>
         <param field="Mode3" label="VIN (optional)"/>
         <param field="Mode4" label="Openwheater API (optional)"/>
         <param field="Mode5" label="ABRP apikey:token (optional)"/>
+        <param field="Username" label="Google Maps Token (optional)"/>
         <param field="Mode6" label="Debug" width="150px">
             <options>
                 <option label="None" value="0"  default="true" />
@@ -70,8 +69,7 @@ MAXUPDATEINTERVAL=24*3600 # Max number of seconds every sensor has to update whe
 #global vars
 abrp_api_key=None
 abrp_token=None
-vocuser=None
-vocpass=None
+google_api_key=None
 vccapikey=None
 access_token=None
 refresh_token=None
@@ -177,59 +175,6 @@ def Info(text):
     if info or debugging:
         Domoticz.Log("INFO: "+str(text))
 
-def LoginToVOC():
-    global access_token,refresh_token,expirytimestamp
-
-    Debug("LoginToVOC() called")
-    
-    try:
-        response = requests.post(
-            "https://volvoid.eu.volvocars.com/as/token.oauth2",
-            headers = {
-                'authorization': 'Basic aDRZZjBiOlU4WWtTYlZsNnh3c2c1WVFxWmZyZ1ZtSWFEcGhPc3kxUENhVXNpY1F0bzNUUjVrd2FKc2U0QVpkZ2ZJZmNMeXc=',
-                'content-type': 'application/x-www-form-urlencoded',
-                'user-agent': 'okhttp/4.10.0'
-            },
-            data = {
-                'username': vocuser,
-                'password': vocpass,
-                'access_token_manager_id': 'JWTh4Yf0b',
-                'grant_type': 'password',
-                'scope': 'openid email profile care_by_volvo:financial_information:invoice:read care_by_volvo:financial_information:payment_method care_by_volvo:subscription:read customer:attributes customer:attributes:write order:attributes vehicle:attributes tsp_customer_api:all conve:brake_status conve:climatization_start_stop conve:command_accessibility conve:commands conve:diagnostics_engine_status conve:diagnostics_workshop conve:doors_status conve:engine_status conve:environment conve:fuel_status conve:honk_flash conve:lock conve:lock_status conve:navigation conve:odometer_status conve:trip_statistics conve:tyre_status conve:unlock conve:vehicle_relation conve:warnings conve:windows_status energy:battery_charge_level energy:charging_connection_status energy:charging_system_status energy:electric_range energy:estimated_charging_time energy:recharge_status vehicle:attributes'
-            },
-            timeout = TIMEOUT
-        )
-        if response.status_code!=200:
-            Error("VolvoAPI failed calling https://volvoid.eu.volvocars.com/as/token.oauth2, HTTP Statuscode "+str(response.status_code))
-            Error("Response: "+str(response.json()))
-            access_token=None
-            refresh_token=None
-        else:
-            Debug(response.content)
-            try:
-                resp=response.json()
-                if resp==None or "error" in resp.keys():
-                    Error("Login Failed, check your config, Response from Volvo: "+str(response.content))
-                    refresh_token=None
-                    access_token=None
-                else:
-                    Info("Login successful!")
-
-                    #retrieve tokens
-                    access_token = resp['access_token']
-                    refresh_token = resp['refresh_token']
-                    expirytimestamp=time.time()+resp['expires_in']
-
-                    #write to ini file
-                    WriteTokenToIniFile()
-
-            except ValueError as exc:
-                Error("Login Failed: unable to process json response from https://volvoid.eu.volvocars.com/as/token.oauth2 : "+str(exc))
-
-    except Exception as error:
-        Error("Login failed, check internet connection:")
-        Error(error)
-
 def ReadTokenFromIniFile():
     global access_token,refresh_token,expirytimestamp
 
@@ -245,7 +190,7 @@ def ReadTokenFromIniFile():
         return True
 
     except KeyError as exc:
-        Info("Unable to read token from inifile, "+str(exc))
+        Error("Unable to read token from inifile, run authorize.py"+str(exc))
         return False
 
 
@@ -326,16 +271,12 @@ def CheckRefreshToken():
         if time.time()-lastloginattempttimestamp>=MINTIMEBETWEENLOGINATTEMPTS:
             Debug("Nog logged in, attempting to login")
             lastloginattempttimestamp=time.time()
-            LoginToVOC()
+            # Try from file
+            ReadTokenFromIniFile()
             if refresh_token:
                 GetVin()
             else:
-                # Try from file
-                ReadTokenFromIniFile()
-                if refresh_token:
-                    GetVin()
-                else:
-                    Error("Unable to login to Volvo, check your authorisation settings")
+                Error("Unable to login to Volvo, check your authorisation settings")
         else:
             Debug("Not logged in, retrying in "+str(MINTIMEBETWEENLOGINATTEMPTS-(time.time()-lastloginattempttimestamp))+" seconds")
 
@@ -1235,8 +1176,7 @@ class BasePlugin:
         else:
             Debug("len="+str(len(values)))
 
-        vocuser=Parameters["Username"]
-        vocpass=Parameters["Password"]
+        google_api_key=Parameters["Username"]
         vccapikey=Parameters["Mode1"]
         updateinterval=int(Parameters["Mode2"])
         if (updateinterval<100):
