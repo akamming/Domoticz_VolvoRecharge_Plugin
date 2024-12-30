@@ -943,7 +943,7 @@ def UpdateABRP():
         Error(error)
 
 def GetFriendlyAdress(lattitude,longitude):
-    FriendlyAdress="unknown, no google_api_key in Volvo plugin config"
+    FriendlyAdress=str(lattitude)+","+str(longitude)
     if google_api_key:
         url="https://maps.googleapis.com/maps/api/geocode/json?latlng="+str(lattitude)+","+str(longitude)+"&key="+google_api_key
         Debug("Google url is "+url)
@@ -954,11 +954,10 @@ def GetFriendlyAdress(lattitude,longitude):
                 FriendlyAdress=response.json()["results"][0]["formatted_address"]
             except Exception as error:
                 Error("Error getting friendly adress"+str(error))
-                FriendlyAdress="Unknown, check the domoticz log for Errors"
+                Debug("Google response: "+response.text)
         else:
             Error("Google Error "+str(response.status_code))
             Debug(response.text)
-            FriendlyAdress="Google Error"
 
     return FriendlyAdress
 
