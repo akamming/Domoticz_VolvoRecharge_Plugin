@@ -944,7 +944,20 @@ def UpdateABRP():
 def GetFriendlyAdress(lattitude,longitude):
     FriendlyAdress="unknown, no google_api_key in Volvo plugin config"
     if google_api_key:
-        FriendlyAdress="Friendly Adress"
+        url="https://maps.googleapis.com/maps/api/geocode/json?latlng="+str(lattitude)+","+str(longitude)+"&key="+google_api_key
+        Debug("Google url is "+url)
+        response=requests.get(url,timeout=TIMEOUT)
+        if response.status_code==200:
+            #Debug(reponse.text)
+            try:
+                FriendlyAdress=response.json()["results"][0]["formatted_address"]
+            except Exception as error:
+                Error("Error getting friendly adress"+str(error))
+                FriendlyAdress="Unknown, check the domoticz log for Errors"
+        else:
+            Error("Google Error "+str(response.status_code))
+            Debug(response.text)
+            FriendlyAdress="Google Error"
 
     return FriendlyAdress
 
@@ -985,7 +998,7 @@ def UpdateLastKnownLocation():
             UpdateLastLocationSensor(currentLattitude,currentLongitude,currentFriendlyAdress,currentOdometer,currentKWHMeter)
 
             #Log to the triplog
-            Tripline=oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+"\n"
+            Tripline=str(datetime.datetime.now())+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+"\n"
             filename=Parameters["HomeFolder"]+"triplog.csv"
             f=open(filename,"a")
             f.write(Tripline)
