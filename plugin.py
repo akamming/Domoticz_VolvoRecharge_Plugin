@@ -22,6 +22,7 @@
             <li>Optional: Set a VIN if you connected more than one car to your volvo account. If empty the plugin will use the 1st car attached to your Volvo account</li>
             <li>Optional: Set Openweather API: Will also get temperature around the car (if your domoticz location settings are set)</li>
             <li>Optional: Set ABRP APIkey/token: Will link you car to ABRP, so ABRP has the actual battery percentage</li>
+            <li>Optional: Set Google API key: sets friendly names in the triplog</li>
             <li>Set an update interval. If you don't pay Volvo for the API, you're only allowed to do 10.000 calls per day.. so make sure not to set the update interval too high. The plugin does several calles per interval.</li>
         </ul>
     </description>
