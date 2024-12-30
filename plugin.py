@@ -989,20 +989,23 @@ def UpdateLastKnownLocation():
         if (currentLattitude==oldLattitude and currentLongitude==oldLongitude):
             Debug("Car is still on same location, do nothing")
         else:
-            #calculate new location and differences
-            Debug("Car moved, calculate difference")
-            Triplength=currentOdometer-oldOdometer
-            TripUsage=round((currentKWHMeter-oldKWHmeter)/1000,2)
-            Debug("Car drove "+str(Triplength)+" kms and used "+str(TripUsage)+" kwh's")
-            currentFriendlyAdress=GetFriendlyAdress(currentLattitude,currentLongitude)
-            UpdateLastLocationSensor(currentLattitude,currentLongitude,currentFriendlyAdress,currentOdometer,currentKWHMeter)
+            if currentOdometer==oldOdometer:
+                Debug("Car moved, but no increase in ODOmeter, ignoring update, probably caused by GPS inaccuracy")
+            else:
+                #calculate new location and differences
+                Debug("Car moved, calculate difference")
+                Triplength=currentOdometer-oldOdometer
+                TripUsage=round((currentKWHMeter-oldKWHmeter)/1000,2)
+                Debug("Car drove "+str(Triplength)+" kms and used "+str(TripUsage)+" kwh's")
+                currentFriendlyAdress=GetFriendlyAdress(currentLattitude,currentLongitude)
+                UpdateLastLocationSensor(currentLattitude,currentLongitude,currentFriendlyAdress,currentOdometer,currentKWHMeter)
 
-            #Log to the triplog
-            Tripline=str(datetime.datetime.now())+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+"\n"
-            filename=Parameters["HomeFolder"]+"triplog.csv"
-            f=open(filename,"a")
-            f.write(Tripline)
-            f.close()
+                #Log to the triplog
+                Tripline=str(datetime.datetime.now())+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+"\n"
+                filename=Parameters["HomeFolder"]+"triplog.csv"
+                f=open(filename,"a")
+                f.write(Tripline)
+                f.close()
 
 def Heartbeat():
     global lastupdate
