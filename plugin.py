@@ -942,14 +942,14 @@ def UpdateABRP():
         Error(error)
 
 def GetFriendlyAdress(lattitude,longitude):
-    FriendlyAdress=str(lattitude)+","+str(longitude)
+    FriendlyAdress="unknown, no google_api_key in Volvo plugin config"
     if google_api_key:
         FriendlyAdress="Friendly Adress"
 
     return FriendlyAdress
 
-def UpdateLastLocationSensor(lattitude,longitude,odometer,kwhmeter):
-    CurrentLocation=str(lattitude)+";"+str(longitude)+";"+GetFriendlyAdress(lattitude,longitude)+";"+str(odometer)+";"+str(kwhmeter)
+def UpdateLastLocationSensor(lattitude,longitude,friendlyadress,odometer,kwhmeter):
+    CurrentLocation=str(lattitude)+";"+str(longitude)+";"+friendlyadress+";"+str(odometer)+";"+str(kwhmeter)
     Debug(CurrentLocation)
     UpdateTextSensor(vin,LASTKNOWNLOCATION,"Last Known Location",CurrentLocation)
 
@@ -963,25 +963,33 @@ def UpdateLastKnownLocation():
 
     if (not vin in Devices) or (not LASTKNOWNLOCATION in Devices[vin].Units):
         Debug("LastKnownLocation sensor not there, creating")
-        UpdateLastLocationSensor(currentLattitude,currentLongitude,currentOdometer,currentKWHMeter)
+        UpdateLastLocationSensor(currentLattitude,currentLongitude,GetFriendlyAdress(currentLattitude,currentLongitude),currentOdometer,currentKWHMeter)
     else:
         #Get old values
         oldLocation=Devices[vin].Units[LASTKNOWNLOCATION].sValue.split(";")
         oldLattitude=float(oldLocation[0])
         oldLongitude=float(oldLocation[1])
+        oldFriendlyAdress=oldLocation[2]
         oldOdometer=int(oldLocation[3])
         oldKWHmeter=float(oldLocation[4])
 
-        Triplength=currentOdometer-oldOdometer
-        TripUsage=currentKWHMeter-oldKWHmeter
-        Debug("Car drove "+str(Triplength)+" and used "+str(TripUsage)+" kwh's")
-        UpdateLastLocationSensor(currentLattitude,currentLongitude,currentOdometer,currentKWHMeter)
-        
         if (currentLattitude==oldLattitude and currentLongitude==oldLongitude):
             Debug("Car is still on same location, do nothing")
         else:
-            Debug("Car moved")
-        
+            #calculate new location and differences
+            Debug("Car moved, calculate difference")
+            Triplength=currentOdometer-oldOdometer
+            TripUsage=round((currentKWHMeter-oldKWHmeter)/1000,2)
+            Debug("Car drove "+str(Triplength)+" kms and used "+str(TripUsage)+" kwh's")
+            currentFriendlyAdress=GetFriendlyAdress(currentLattitude,currentLongitude)
+            UpdateLastLocationSensor(currentLattitude,currentLongitude,currentFriendlyAdress,currentOdometer,currentKWHMeter)
+
+            #Log to the triplog
+            Tripline=oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+"\n"
+            filename=Parameters["HomeFolder"]+"triplog.csv"
+            f=open(filename,"a")
+            f.write(Tripline)
+            f.close()
 
 def Heartbeat():
     global lastupdate
