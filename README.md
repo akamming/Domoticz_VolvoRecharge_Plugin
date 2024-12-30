@@ -22,7 +22,7 @@ NEW: Triplog support (Still experimental)
 - syncs SOC and charging status to ABRP (https://documenter.getpostman.com/view/7396339/SWTK5a8w)
 - Estimates the number of kwh's used and charged (since the api only reports differences in battery percentage, this is only an estimation and not very accurate)
 - Retrieves outsidetemp from openweather (if openweather token configured)
-- Logs all trips in triplog.csv (located in the directory of the plugin)
+- Logs all trips in triplog.csv (located in the directory of the plugin), requires configuring a Google API key in the settings (https://support.google.com/googleapi/answer/6158862?hl=en)
 
 ### Devices
 pls look at the above links to API for device descriptions
