@@ -165,6 +165,7 @@ FLASH=76
 HONKFLASH=77
 LOCKREDUCEDGUARD=78
 LASTKNOWNLOCATION=79
+LASTTRIP=80
 
 def Debug(text):
     if debugging:
@@ -1026,7 +1027,7 @@ def UpdateLastKnownLocation():
                 Debug("Car moved, but no increase in ODOmeter, ignoring update, probably caused by GPS inaccuracy")
             else:
                 #calculate new location and differences
-                Debug("Car moved, calculate difference")
+                Debug("Car moved, calculate difference and write to triplog.csv")
                 Triplength=currentOdometer-oldOdometer
                 TripUsage=round((currentKWHMeter-oldKWHmeter)/1000,2)
                 Debug("Car drove "+str(Triplength)+" kms and used "+str(TripUsage)+" kwh's")
@@ -1039,6 +1040,10 @@ def UpdateLastKnownLocation():
                 f=open(filename,"a")
                 f.write(Tripline)
                 f.close()
+
+                #UpdateLastTripSensor
+                LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh"
+                UpdateTextSensor(vin,LASTTRIP,"Last Trip",LastTrip)
 
 def Heartbeat():
     global lastupdate
