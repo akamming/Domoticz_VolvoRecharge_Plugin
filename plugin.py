@@ -983,15 +983,16 @@ def GetFriendlyAdress(lattitude,longitude):
         Debug("Google url is "+url)
         response=requests.get(url,timeout=TIMEOUT)
         if response.status_code==200:
-            #Debug(reponse.text)
             try:
                 FriendlyAdress=response.json()["results"][0]["formatted_address"]
             except Exception as error:
                 Error("Error getting friendly adress"+str(error))
-                Debug("Google response: "+response.text)
+                Error("Google response: "+response.text)
+                FriendlyAdress+=" (unknown google maps response, check domoticz log for errors)"
         else:
             Error("Google Error "+str(response.status_code))
-            Debug(response.text)
+            Error(response.text)
+            FriendlyAdress+=" (google http status error: "+str(response.status_code)+", check domoticz log for errors)"
 
     return FriendlyAdress
 
