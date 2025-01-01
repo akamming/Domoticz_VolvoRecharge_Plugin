@@ -493,7 +493,24 @@ def UpdateSwitch(vn,idx,name,nv,sv):
     except KeyError:
         Error("Unable to update switch ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
+def ReverseSwitch(vn,idx):
+    Debug("ReverseSwitch() called")
+    if (vn in Devices) and (idx in Devices[vn].Units):
+        #Flip values
+        if Devices[vn].Units[idx].nValue==1:
+            Devices[vn].Unitx[idx].nValue=0
+            Devices[vn].Unitx[idx].sValue='Off'
+        else:
+            Devices[vn].Unitx[idx].nValue=1
+            Devices[vn].Unitx[idx].sValue='On'
 
+        #update the device
+        Devices[vn].Units[idx].Update(Log=True)
+        Domoticz.Log("On/Off Switch ("+Devices[vin].Units[idx].Name+")")
+    else:
+        Error("Device does not exist")
+
+            
 def UpdateDoorOrWindow(vin,idx,name,value):
     Debug ("UpdateDoorOrWindow("+str(vin)+","+str(idx)+","+str(name)+","+str(value)+") called")
     if (not vin in Devices) or (not idx in Devices[vin].Units):
@@ -535,6 +552,22 @@ def UpdateLock(vin,idx,name,value):
             Debug("Lock status unchanged, not updating "+Devices[vin].Units[idx].Name)
     except KeyError:
         Error("Unable to update Lock ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
+
+def ReverseLock(vin,idx):
+    Debug("Reverslock() called")
+    if (vin in Devices) and (idx in Devices[vin].Units):
+        #Reverse the value
+        if Devices[vin].Units[idx].nValue==1:
+            Devices[vin].Units[idx].nValue = 0
+            Devices[vin].Units[idx].sValue = "Unlocked"
+        else:
+            Devices[vin].Units[idx].nValue = 1
+            Devices[vin].Units[idx].sValue = "Locked"
+        #Update the value
+        Devices[vin].Units[idx].Update(Log=True)
+        Domoticz.Log("Door Lock ("+Devices[vin].Units[idx].Name+")")
+    else:
+        Error("Lock does not exist")
 
 def UpdateOdoMeter(vn,idx,name,value):
     options = {"ValueQuantity": "Custom", "ValueUnits": "km"}
@@ -1094,7 +1127,8 @@ def HandleClimatizationCommand(vin,idx,command):
             url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/climatization-stop'
             nv=0
         
-
+        # Set switch to give feedback to UI
+        UpdateSwitch(vin,CLIMATIZATION,"Climatization",nv,command)
 
         try:
             Debug("URL: {}".format(url))
@@ -1119,15 +1153,22 @@ def HandleClimatizationCommand(vin,idx,command):
             Debug(sjson)
             if status.status_code==200:
                 if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
-                    UpdateSwitch(vin,CLIMATIZATION,"Climatization",nv,command)
+                    Debug("Command succesfully completed") 
                 else:
                     Error("climatization did not start/stop, API returned code "+status.json()["data"]["invokeStatus"])
+                    #reverse switch again
+                    ReverseSwitch(vin,CLIMATIZATION)
+
             else:
                 Error("climatizatation did not start/stop, webserver returned "+str(status.status_code)+", result: "+sjson)
+                #reverse switch again
+                ReverseSwitch(vin,CLIMATIZATION)
 
         except Exception as err:
             Error("handleclimatization command failed:")
             Error(err)
+            #reverse switch again
+            ReverseSwitch(vin,CLIMATIZATION)
 
 def HandleLockCommand(vin,idx,command):
     if refresh_token:
@@ -1139,6 +1180,8 @@ def HandleLockCommand(vin,idx,command):
             url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/unlock'
             cmd = "UNLOCKED"
             message = '{ "unlockDuration": 120 }'
+
+        UpdateLock(vin,CARLOCKED,"CarLocked",cmd)
 
         try:
             Debug("URL: {}".format(url))
@@ -1160,15 +1203,18 @@ def HandleLockCommand(vin,idx,command):
             Debug(sjson)
             if status.status_code==200:
                 if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
-                    UpdateLock(vin,CARLOCKED,"CarLocked",cmd)
+                    Debug("Command completed")
                 else:
                     Error("Car did not lock/unlock, API returned code "+status.json()["data"]["invokeStatus"])
+                    ReverseLock(vin,CARLOCKED)
             else:
                 Error("car did not lock/unlock, webserver returned "+str(status.status_code)+", result: "+sjson)
+                ReverseLock(vin,CARLOCKED)
 
         except Exception as error:
             Error("lock/unlock command failed:")
             Error(error)
+            ReverseLock(vin,CARLOCKED)
 
 def HandleCommand(vin,command):
     if refresh_token:
