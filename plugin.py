@@ -166,6 +166,7 @@ HONKFLASH=77
 LOCKREDUCEDGUARD=78
 LASTKNOWNLOCATION=79
 LASTTRIP=80
+CURRENTLOCATION=81
 
 def Debug(text):
     if debugging:
@@ -735,8 +736,11 @@ def GetCommandAccessabilityStatus():
         UpdateTextSensor(vin,AVAILABILITYSTATUS,"availabilityStatus", CAStatus["data"]["availabilityStatus"]["value"])
         try:
            UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", CAStatus["data"]["availabilityStatus"]["unavailableReason"])
+           if CAStatus["data"]["availabilityStatus"]["unavailableReason"]=="CAR_IN_USE":
+               Debug("Car is drving, set current location to unknown")
+               UpdateTextSensor(vin,CURRENTLOCATION,"Current Location","Unknown (Car is in use)")
         except Exception as error:
-            Debug("no unavaible reason found, so car is online")
+            Debug("no unavaible reason found, so car is online, error: "+str(error))
             UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", "Online")
     else:
         Error("Updating Command Accessability failed")
@@ -1034,6 +1038,7 @@ def UpdateLastKnownLocation():
                 Debug("Car drove "+str(Triplength)+" kms and used "+str(TripUsage)+" kwh's")
                 currentFriendlyAdress=GetFriendlyAdress(currentLattitude,currentLongitude)
                 UpdateLastLocationSensor(currentLattitude,currentLongitude,currentFriendlyAdress,currentOdometer,currentKWHMeter)
+                UpdateTextSensor(vin,CURRENTLOCATION,"Current Location",currentFriendlyAdress)
 
                 #Log to the triplog
                 Tripline=str(datetime.datetime.now())+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+"\n"
