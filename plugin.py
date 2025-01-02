@@ -370,8 +370,6 @@ def GetVin():
 
             if vin:
                 CheckVehicleDetails()
-                VolvoAPI('https://api.volvocars.com/connected-vehicle/v2/vehicles/'+vin+'/commands', 'application/json')
-
 
     except Exception as error:
         Debug("Get vehicles failed:")
