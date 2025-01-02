@@ -65,6 +65,7 @@ CLIMATIZATIONTIMEOUT=60 #can take longer when car is in deepsleep
 LOCKTIMEOUT=60 #can take longer when car is in deepsleep
 MINTIMEBETWEENLOGINATTEMPTS=600 #10 mins
 HOMECHARGINGRADIUS=0.025 # 25 meter (assume the car is using the home charger when with 25 meters)
+MINDIFFBETWEENCOORDS=0.025 # Only record new trip if new destination is further away than this distance from the previous location
 MAXUPDATEINTERVAL=24*3600 # Max number of seconds every sensor has to update when value has not changed, defaults to once per day
 
 #global vars
@@ -1026,8 +1027,9 @@ def UpdateLastKnownLocation():
         if (currentLattitude==oldLattitude and currentLongitude==oldLongitude):
             Debug("Car is still on same location, do nothing")
         else:
-            if currentOdometer==oldOdometer:
-                Debug("Car moved, but no increase in ODOmeter, ignoring update, probably caused by GPS inaccuracy")
+            distance2lastknownlocation=DistanceBetweenCoords((oldLattitude,oldLongitude),(currentLattitude,currentLongitude))
+            if distance2lastknownlocation<MINDIFFBETWEENCOORDS:
+                Debug("Car moved, but was only "+str(distance2lastknownlocation)+" km from previous location. Ignoring update which was most likely caused by GPS inaccuracy")
             else:
                 #calculate new location and differences
                 Debug("Car moved, calculate difference and write to triplog.csv")
