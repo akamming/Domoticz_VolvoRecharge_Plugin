@@ -168,6 +168,7 @@ LOCKREDUCEDGUARD=78
 LASTKNOWNLOCATION=79
 LASTTRIP=80
 CURRENTLOCATION=81
+UPDATENOW=82
 
 def Debug(text):
     if debugging:
@@ -1051,6 +1052,33 @@ def UpdateLastKnownLocation():
                 LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh"
                 UpdateTextSensor(vin,LASTTRIP,"Last Trip",LastTrip)
 
+def UpdateDevices():
+    global lastupdate
+
+    # do updates
+    Debug("UpdateDevices() Called")
+    lastupdate=time.time()
+    GetCommandAccessabilityStatus() # check if we can update
+    if (Devices[vin].Units[AVAILABILITYSTATUS].sValue=="AVAILABLE" or Devices[vin].Units[UNAVAILABLEREASON].sValue=="CAR_IN_USE"):
+        GetLocation() #Location must be known before GetRechargeStatus te detect local charging
+        GetDoorWindowAndLockStatus()
+        if batteryPackSize:
+            GetRechargeStatus()
+        else:
+            Debug("No (Partial) EV features, don't call GetRechargeStatus")
+        if Devices[vin].Units[UNAVAILABLEREASON].nValue==0:
+            GetOdoMeter() 
+            GetTyreStatus()
+            GetDiagnostics()
+            GetEngineStatus() 
+            GetEngine()
+            GetWarnings()
+            UpdateLastKnownLocation()
+        else:
+            Debug("Car in use, skipping several API calls")
+    else:
+        Error("Car unavailable, check AVAILABILTYSTATUS sensor to see why the car is unavailable")
+
 def Heartbeat():
     global lastupdate
     global batteryPackSize
@@ -1063,6 +1091,7 @@ def Heartbeat():
         CreatePushButton(vin,HONK,"Honk")
         CreatePushButton(vin,HONKFLASH,"Honk and Flash")
         CreatePushButton(vin,LOCKREDUCEDGUARD,"Lock with Reduced Guard")
+        CreatePushButton(vin,UPDATENOW,"Force Update")
 
         #handle climatization logic
         if (not vin in Devices) or (not CLIMATIZATION in Devices[vin].Units):
@@ -1083,29 +1112,7 @@ def Heartbeat():
 
         #handle updates
         if time.time()-lastupdate>=updateinterval:
-            # do updates
-            Debug("Updating Devices")
-            lastupdate=time.time()
-            GetCommandAccessabilityStatus() # check if we can update
-            if (Devices[vin].Units[AVAILABILITYSTATUS].sValue=="AVAILABLE" or Devices[vin].Units[UNAVAILABLEREASON].sValue=="CAR_IN_USE"):
-                GetLocation() #Location must be known before GetRechargeStatus te detect local charging
-                GetDoorWindowAndLockStatus()
-                if batteryPackSize:
-                    GetRechargeStatus()
-                else:
-                    Debug("No (Partial) EV features, don't call GetRechargeStatus")
-                if Devices[vin].Units[UNAVAILABLEREASON].nValue==0:
-                    GetOdoMeter() 
-                    GetTyreStatus()
-                    GetDiagnostics()
-                    GetEngineStatus() 
-                    GetEngine()
-                    GetWarnings()
-                    UpdateLastKnownLocation()
-                else:
-                    Debug("Car in use, skipping several API calls")
-            else:
-                Error("Car unavailable, check AVAILABILTYSTATUS sensor to see why the car is unavailable")
+            UpdateDevices()
         else:
             Debug("Not updating, "+str(updateinterval-(time.time()-lastupdate))+" to update")
         
@@ -1351,6 +1358,9 @@ class BasePlugin:
         elif Unit==LOCKREDUCEDGUARD:
             Debug("Send Lock Reduced Guard command")
             HandleCommand(DeviceID,"lock-reduced-guard")
+        elif Unit==UPDATENOW:
+            Debug("Force Update")
+            UpdateDevices()
         else:
             Debug("unknown command")
 
