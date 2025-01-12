@@ -422,17 +422,18 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
     try:
         #init values
         newkwh=0
+        currentkwh=0
         power=0
+        values=Devices[vin].Units[idx].sValue.split(";")
+        if len(values)==2:
+            #we have a current value
+            currentkwh=float(values[1])
+            #power=(batteryPackSize*67/69)/100*percentage*1000*3600/TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()
 
         #calculate new kwh value
-        currentkwh=Devices[vin].Units[idx].sValue.split(";")
-        if len(currentkwh)==2:
-            newkwh=float(currentkwh[1])+batteryPackSize/100*percentage*1000
-            power=(batteryPackSize*67/69)/100*percentage*1000*3600/TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()
-        else:
-            newkwh=batteryPackSize/100*percentage*1000
-            power=0
+        newkwh=currentkwh+(batteryPackSize*67.0/69.452)/100*percentage*1000
 
+        #update the device
         Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+str(Devices[vin].Units[idx].sValue)+" to "+str(int(power))+";"+str(newkwh))
         Devices[vin].Units[idx].nValue = 0
         Devices[vin].Units[idx].sValue = str(int(power))+";"+str(newkwh)
