@@ -58,6 +58,7 @@ from datetime import timezone
 import time
 from math import sin, cos, sqrt, atan2, radians
 import configparser
+import os.path
 
 #Constants
 TIMEOUT=60 #timeout for API requests
@@ -1067,9 +1068,17 @@ def UpdateLastKnownLocation():
                 #Log to the triplog
                 Tripline=str(datetime.datetime.now())+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+";"+str(TripPercentage)+"\n"
                 filename=Parameters["HomeFolder"]+"triplog.csv"
-                f=open(filename,"a")
-                f.write(Tripline)
-                f.close()
+                if os.path.exists(filename):
+                    Debug("existing file, append line")
+                    f=open(filename,"a")
+                    f.write(Tripline)
+                    f.close()
+                else:
+                    Debug("New file, include header")
+                    f=open(filename,"w")
+                    f.write("datetime;from;to;distance;kwh;usedpercentage\n")
+                    f.write(Tripline)
+                    f.close()
 
                 #UpdateLastTripSensor
                 LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh, battery "+str(TripPercentage)+" %"
