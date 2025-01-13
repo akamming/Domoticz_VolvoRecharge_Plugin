@@ -791,7 +791,7 @@ def GetRechargeStatus():
             Debug("We have previous batterychargelevelupdates, so we can caculate the diffence")
 
             #Update kwh counters
-            DeltaPercentageBattery=float(RechargeStatus["data"]["batteryChargeLevel"]["value"])-float(Devices[vin].Units[BATTERYCHARGELEVEL].sValue)
+            DeltaPercentageBattery=int(float(RechargeStatus["data"]["batteryChargeLevel"]["value"])-float(Devices[vin].Units[BATTERYCHARGELEVEL].sValue))
             
             if DeltaPercentageBattery<0:
                 Debug("Car is using Energy, we should increase the used energy counter")
@@ -801,6 +801,9 @@ def GetRechargeStatus():
                 Debug("Car is is gaining Energy, we should update the total charged counter")
                 IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", DeltaPercentageBattery) 
                 IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
+
+                #Also update the battery percentage in the location sensor 
+                UpdateBatteryChargeLevelInLastKnownLocation(float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))
 
                 #Check if we are charging near home or public charging
                 try:
@@ -1001,11 +1004,25 @@ def GetFriendlyAdress(lattitude,longitude):
 
     return FriendlyAdress
 
-def UpdateLastLocationSensor(lattitude,longitude,friendlyadress,odometer,kwhmeter):
-    CurrentLocation=str(lattitude)+";"+str(longitude)+";"+friendlyadress+";"+str(odometer)+";"+str(kwhmeter)
+def UpdateLastLocationSensor(lattitude,longitude,friendlyadress,odometer,kwhmeter,percentage):
+    CurrentLocation=str(lattitude)+";"+str(longitude)+";"+friendlyadress+";"+str(odometer)+";"+str(kwhmeter)+";"+str(percentage)
     Debug(CurrentLocation)
     UpdateTextSensor(vin,LASTKNOWNLOCATION,"Last Known Location",CurrentLocation)
 
+def UpdateBatteryChargeLevelInLastKnownLocation(Percentage):
+    Debug("Updating lastknown location with "+str(Percentage))
+
+    #Get Current Values
+    Values=Devices[vin].Units[LASTKNOWNLOCATION].sValue.split(";")
+    Lattitude=float(Values[0])
+    Longitude=float(Values[1])
+    FriendlyAdress=Values[2]
+    Odometer=int(Values[3])
+    KWHmeter=float(Values[4])
+
+    #Update the Device with the new Percentage
+    UpdateLastLocationSensor(Lattitude,Longitude,FriendlyAdress,Odometer,KWHmeter,Percentage)
+    
 def UpdateLastKnownLocation():
     #build up line
     currentLattitude=float(Devices[vin].Units[LATTITUDE].sValue)
@@ -1013,10 +1030,11 @@ def UpdateLastKnownLocation():
     currentOdometer=Devices[vin].Units[ODOMETER].nValue
     usedkwh=Devices[vin].Units[USEDKWH].sValue.split(";")
     currentKWHMeter=float(usedkwh[1])
+    currentPercentage=Devices[vin].Units[BATTERYCHARGELEVEL].nValue
 
     if (not vin in Devices) or (not LASTKNOWNLOCATION in Devices[vin].Units):
         Debug("LastKnownLocation sensor not there, creating")
-        UpdateLastLocationSensor(currentLattitude,currentLongitude,GetFriendlyAdress(currentLattitude,currentLongitude),currentOdometer,currentKWHMeter)
+        UpdateLastLocationSensor(currentLattitude,currentLongitude,GetFriendlyAdress(currentLattitude,currentLongitude),currentOdometer,currentKWHMeter,currentPercentage)
     else:
         #Get old values
         oldLocation=Devices[vin].Units[LASTKNOWNLOCATION].sValue.split(";")
@@ -1025,6 +1043,9 @@ def UpdateLastKnownLocation():
         oldFriendlyAdress=oldLocation[2]
         oldOdometer=int(oldLocation[3])
         oldKWHmeter=float(oldLocation[4])
+        oldPercentage=0
+        if len(oldLocation)>5:
+            oldPercentage=float(oldLocation[5])
 
         if (currentLattitude==oldLattitude and currentLongitude==oldLongitude):
             Debug("Car is still on same location, do nothing")
@@ -1037,20 +1058,21 @@ def UpdateLastKnownLocation():
                 Debug("Car moved, calculate difference and write to triplog.csv")
                 Triplength=currentOdometer-oldOdometer
                 TripUsage=round((currentKWHMeter-oldKWHmeter)/1000,2)
+                TripPercentage=int(oldPercentage-currentPercentage)
                 Debug("Car drove "+str(Triplength)+" kms and used "+str(TripUsage)+" kwh's")
                 currentFriendlyAdress=GetFriendlyAdress(currentLattitude,currentLongitude)
-                UpdateLastLocationSensor(currentLattitude,currentLongitude,currentFriendlyAdress,currentOdometer,currentKWHMeter)
+                UpdateLastLocationSensor(currentLattitude,currentLongitude,currentFriendlyAdress,currentOdometer,currentKWHMeter,currentPercentage)
                 UpdateTextSensor(vin,CURRENTLOCATION,"Current Location",currentFriendlyAdress)
 
                 #Log to the triplog
-                Tripline=str(datetime.datetime.now())+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+"\n"
+                Tripline=str(datetime.datetime.now())+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+";"+str(TripPercentage)+"\n"
                 filename=Parameters["HomeFolder"]+"triplog.csv"
                 f=open(filename,"a")
                 f.write(Tripline)
                 f.close()
 
                 #UpdateLastTripSensor
-                LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh"
+                LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh, battery "+str(TripPercentage)+" %"
                 UpdateTextSensor(vin,LASTTRIP,"Last Trip",LastTrip)
 
 def UpdateDevices():
@@ -1074,7 +1096,10 @@ def UpdateDevices():
             GetEngineStatus() 
             GetEngine()
             GetWarnings()
-            UpdateLastKnownLocation()
+            if Devices[vin].Units[UNAVAILABLEREASON].sValue!="CAR_IN_USE":
+                UpdateLastKnownLocation()
+            else:
+                Debug("Car in use, don't try to update location")
         else:
             Debug("Car in use, skipping several API calls")
     else:
