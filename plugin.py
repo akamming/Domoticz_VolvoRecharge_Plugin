@@ -1038,7 +1038,7 @@ def UpdateLastKnownLocation():
     usedkwh=Devices[vin].Units[USEDKWH].sValue.split(";")
     currentKWHMeter=float(usedkwh[1])
     currentPercentage=Devices[vin].Units[BATTERYCHARGELEVEL].nValue
-    currentDatetime = datetime.datetime.now().strftime('%x %X') # in excel readable format
+    currentDatetime = datetime.datetime.now().strftime('%Y/%m/%d %X') # in excel readable format
 
     if (not vin in Devices) or (not LASTKNOWNLOCATION in Devices[vin].Units):
         Debug("LastKnownLocation sensor not there, creating")
