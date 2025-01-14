@@ -95,4 +95,3 @@ If you own a non electric vehicle and the API works, pls me know by registring a
 - Open/Close Open windows
 - Set Charging Limits (Amperage/Percentage)
 - Start/Stop Charging
-- Honk/Flash (API is there, but doesn't work)
