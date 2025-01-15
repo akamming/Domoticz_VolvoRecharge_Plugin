@@ -1039,6 +1039,9 @@ def UpdateLastKnownLocation():
     currentKWHMeter=float(usedkwh[1])
     currentPercentage=Devices[vin].Units[BATTERYCHARGELEVEL].nValue
     currentDatetime = datetime.datetime.now().strftime('%Y/%m/%d %X') # in excel readable format
+    currentTemp="Unknown"
+    if (vin in Devices) and (OUTSIDETEMP in Devices[vin].Units):
+        currentTemp=Devices[vin].Units[OUTSIDETEMP].sValue
 
     if (not vin in Devices) or (not LASTKNOWNLOCATION in Devices[vin].Units):
         Debug("LastKnownLocation sensor not there, creating")
@@ -1080,7 +1083,7 @@ def UpdateLastKnownLocation():
             UpdateTextSensor(vin,CURRENTLOCATION,"Current Location",currentFriendlyAdress)
 
             #Log to the triplog
-            Tripline=currentDatetime+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+";"+str(TripPercentage)+"%\n"
+            Tripline=currentDatetime+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+";"+str(TripPercentage)+"%;"+currentTemp+"\n"
             filename=Parameters["HomeFolder"]+"triplog.csv"
             if os.path.exists(filename):
                 Debug("existing file, append line")
@@ -1090,7 +1093,7 @@ def UpdateLastKnownLocation():
             else:
                 Debug("New file, include header")
                 f=open(filename,"w")
-                f.write("datetime;from;to;distance;kwh;odometer;usedpercentage\n")
+                f.write("datetime;from;to;distance;kwh;odometer;usedpercentage;temperature\n")
                 f.write(Tripline)
                 f.close()
 
