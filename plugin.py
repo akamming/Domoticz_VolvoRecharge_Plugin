@@ -755,6 +755,7 @@ def GetCommandAccessabilityStatus():
 def GetRechargeStatus():
     global batteryPackSize
     global ACCharging
+    global carhasmoved
 
     Debug("GetRechargeStatus() called")
     RechargeStatus=VolvoAPI("https://api.volvocars.com/energy/v1/vehicles/"+vin+"/recharge-status","application/vnd.volvocars.api.energy.vehicledata.v1+json")
@@ -797,6 +798,12 @@ def GetRechargeStatus():
 
             #Update kwh counters
             DeltaPercentageBattery=int(float(RechargeStatus["data"]["batteryChargeLevel"]["value"])-float(Devices[vin].Units[BATTERYCHARGELEVEL].sValue))
+
+            if DeltaPercentageBattery!=0 and not carhasmoved:
+                Debug("SOC is changing while car is not moving, Updating battery percentage in last known location")
+                UpdateBatteryChargeLevelInLastKnownLocation(float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))
+            else:
+                Debug("No need to update SOC in last known location")
             
             if DeltaPercentageBattery<0:
                 Debug("Car is using Energy, we should increase the used energy counter")
@@ -806,9 +813,6 @@ def GetRechargeStatus():
                 Debug("Car is is gaining Energy, we should update the total charged counter")
                 IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", DeltaPercentageBattery) 
                 IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
-
-                #Also update the battery percentage in the location sensor 
-                UpdateBatteryChargeLevelInLastKnownLocation(float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))
 
                 #Check if we are charging near home or public charging
                 try:
@@ -1098,7 +1102,7 @@ def UpdateLastKnownLocation():
                 f.close()
 
             #UpdateLastTripSensor
-            LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh, battery "+str(TripPercentage)+" %"
+            LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh, battery "+str(TripPercentage)+" %\nTemperature: "+currentTemp+" C"
             UpdateTextSensor(vin,LASTTRIP,"Last Trip",LastTrip)
 
 def UpdateDevices():
