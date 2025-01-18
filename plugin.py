@@ -1030,7 +1030,7 @@ def UpdateBatteryChargeLevelInLastKnownLocation(Percentage):
     KWHmeter=float(Values[4])
 
     #Update the Device with the new Percentage
-    UpdateLastLocationSensor(Lattitude,Longitude,FriendlyAdress,Odometer,KWHmeter,Percentage)
+    UpdateLastLocationSensor(Lattitude,Longitude,FriendlyAdress,Odometer,KWHmeter,int(Percentage))
     
 def UpdateLastKnownLocation():
     global carhasmoved
