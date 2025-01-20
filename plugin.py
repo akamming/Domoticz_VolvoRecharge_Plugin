@@ -503,11 +503,11 @@ def ReverseSwitch(vn,idx):
     if (vn in Devices) and (idx in Devices[vn].Units):
         #Flip values
         if Devices[vn].Units[idx].nValue==1:
-            Devices[vn].Unitx[idx].nValue=0
-            Devices[vn].Unitx[idx].sValue='Off'
+            Devices[vn].Units[idx].nValue=0
+            Devices[vn].Units[idx].sValue='Off'
         else:
-            Devices[vn].Unitx[idx].nValue=1
-            Devices[vn].Unitx[idx].sValue='On'
+            Devices[vn].Units[idx].nValue=1
+            Devices[vn].Units[idx].sValue='On'
 
         #update the device
         Devices[vn].Units[idx].Update(Log=True)
@@ -1236,6 +1236,7 @@ def HandleClimatizationCommand(vin,idx,command):
             else:
                 Error("climatizatation did not start/stop, webserver returned "+str(status.status_code)+", result: "+sjson)
                 #reverse switch again
+                #check for statuscode 429 and add exponential backoff up till 1 minute or wait 1 minute
                 ReverseSwitch(vin,CLIMATIZATION)
 
         except Exception as err:
