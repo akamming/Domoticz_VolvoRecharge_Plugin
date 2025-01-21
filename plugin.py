@@ -1192,7 +1192,7 @@ def Heartbeat():
 def InvokeCommand(url,message,invoketimeout):
     global lastupdate
 
-    Debug("Invokecommand("+url+","+str(message)+","+str(invoketimeout)+" called")
+    Debug("InvokeCommand("+url+","+str(message)+","+str(invoketimeout)+" called")
     starttime=datetime.datetime.now()
     status = requests.post(
         url,
@@ -1206,13 +1206,10 @@ def InvokeCommand(url,message,invoketimeout):
     )
     endtime=datetime.datetime.now()
 
-    Debug("\nResult:")
-    Debug(status)
-    Debug("Command took "+str(endtime-starttime))
+    Debug("Invoke Command duration: "+str(endtime-starttime))
 
     sjson = json.dumps(status.json(), indent=4)
-    Debug("\nResult JSON:")
-    Debug(sjson)
+    Debug("Result JSON: "+str(sjson))
     if status.status_code==200:
         if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
             Debug("Command succesfully completed") 
@@ -1226,7 +1223,7 @@ def InvokeCommand(url,message,invoketimeout):
         if status.status_code==429:
             # Determine Sleep time
             Delay=60-(time.time()-lastupdate)+5
-            Debug("Delaying with  "+str(Delay)+" seconds")
+            Error("Retrying command in "+str(Delay)+" seconds")
             time.sleep(Delay)
             Debug("Retrying command "+str(url))
 
@@ -1243,13 +1240,10 @@ def InvokeCommand(url,message,invoketimeout):
             )
             endtime=datetime.datetime.now()
 
-            Debug("\nResult:")
-            Debug(status)
-            Debug("Command took "+str(endtime-starttime))
+            Debug("Invoke Command retry duration: "+str(endtime-starttime))
 
             sjson = json.dumps(status.json(), indent=4)
-            Debug("\nResult JSON:")
-            Debug(sjson)
+            Debug("\nResult JSON: "+str(sjson))
             if status.status_code==200:
                 if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
                     Debug("Invoke command succesfully completed") 
