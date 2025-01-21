@@ -1189,6 +1189,81 @@ def Heartbeat():
     else:
         Debug("No vin, do nothing")
 
+def InvokeCommand(url,message,invoketimeout):
+    global lastupdate
+
+    Debug("Invokecommand("+url+","+str(message)+","+str(invoketimeout)+" called")
+    starttime=datetime.datetime.now()
+    status = requests.post(
+        url,
+        headers= {
+            "Content-Type": "application/json",
+            "vcc-api-key": vccapikey,
+            "Authorization": "Bearer " + access_token
+        },
+        data=message,
+        timeout=invoketimeout
+    )
+    endtime=datetime.datetime.now()
+
+    Debug("\nResult:")
+    Debug(status)
+    Debug("Command took "+str(endtime-starttime))
+
+    sjson = json.dumps(status.json(), indent=4)
+    Debug("\nResult JSON:")
+    Debug(sjson)
+    if status.status_code==200:
+        if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
+            Debug("Command succesfully completed") 
+            return True
+        else:
+            Error("Invoke command failed, API returned code "+status.json()["data"]["invokeStatus"])
+            return False
+    else:
+        Error("InvokeCommand failed, webserver returned "+str(status.status_code)+", result: "+sjson)
+        #TODO: handle returncode 429
+        if status.status_code==429:
+            # Determine Sleep time
+            Delay=60-(time.time()-lastupdate)+5
+            Debug("Delaying with  "+str(Delay)+" seconds")
+            time.sleep(Delay)
+            Debug("Retrying command "+str(url))
+
+            #try again
+            starttime=datetime.datetime.now()
+            status = requests.post(
+                url,
+                headers= {
+                    "Content-Type": "application/json",
+                    "vcc-api-key": vccapikey,
+                    "Authorization": "Bearer " + access_token
+                },
+                timeout=invoketimeout
+            )
+            endtime=datetime.datetime.now()
+
+            Debug("\nResult:")
+            Debug(status)
+            Debug("Command took "+str(endtime-starttime))
+
+            sjson = json.dumps(status.json(), indent=4)
+            Debug("\nResult JSON:")
+            Debug(sjson)
+            if status.status_code==200:
+                if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
+                    Debug("Invoke command succesfully completed") 
+                    return True
+                else:
+                    Error("Invoke command failed, API returned code "+status.json()["data"]["invokeStatus"])
+                    return False
+            else:
+                Error("InvokeCommand failed again, webserver returned "+str(status.status_code)+", result: "+sjson)
+                return False
+        else:
+            Debug("Returning False")
+            return False
+
 def HandleClimatizationCommand(vin,idx,command):
     global climatizationstoptimestamp
 
@@ -1204,44 +1279,10 @@ def HandleClimatizationCommand(vin,idx,command):
         # Set switch to give feedback to UI
         UpdateSwitch(vin,CLIMATIZATION,"Climatization",nv,command)
 
-        try:
-            Debug("URL: {}".format(url))
-            starttime=datetime.datetime.now()
-            status = requests.post(
-                url,
-                headers= {
-                    "Content-Type": "application/json",
-                    "vcc-api-key": vccapikey,
-                    "Authorization": "Bearer " + access_token
-                },
-                timeout=CLIMATIZATIONTIMEOUT
-            )
-            endtime=datetime.datetime.now()
-
-            Debug("\nResult:")
-            Debug(status)
-            Debug("Command took "+str(endtime-starttime))
-
-            sjson = json.dumps(status.json(), indent=4)
-            Debug("\nResult JSON:")
-            Debug(sjson)
-            if status.status_code==200:
-                if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
-                    Debug("Command succesfully completed") 
-                else:
-                    Error("climatization did not start/stop, API returned code "+status.json()["data"]["invokeStatus"])
-                    #reverse switch again
-                    ReverseSwitch(vin,CLIMATIZATION)
-
-            else:
-                Error("climatizatation did not start/stop, webserver returned "+str(status.status_code)+", result: "+sjson)
-                #reverse switch again
-                #check for statuscode 429 and add exponential backoff up till 1 minute or wait 1 minute
-                ReverseSwitch(vin,CLIMATIZATION)
-
-        except Exception as err:
-            Error("handleclimatization command failed:")
-            Error(err)
+        if InvokeCommand(url,None,CLIMATIZATIONTIMEOUT): 
+            Debug("Climatization Command succesfully completed") 
+        else:
+            Error("climatization did not start/stop")
             #reverse switch again
             ReverseSwitch(vin,CLIMATIZATION)
 
@@ -1258,73 +1299,22 @@ def HandleLockCommand(vin,idx,command):
 
         UpdateLock(vin,CARLOCKED,"CarLocked",cmd)
 
-        try:
-            Debug("URL: {}".format(url))
-            status = requests.post(
-                url,
-                headers= {
-                    "Content-Type": "application/json",
-                    "vcc-api-key": vccapikey,
-                    "Authorization": "Bearer " + access_token
-                },
-                data=message,
-                timeout=LOCKTIMEOUT
-            )
-
-            Debug("\nResult:")
-            Debug(status)
-            sjson = json.dumps(status.json(), indent=4)
-            Debug("\nResult JSON:")
-            Debug(sjson)
-            if status.status_code==200:
-                if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
-                    Debug("Command completed")
-                else:
-                    Error("Car did not lock/unlock, API returned code "+status.json()["data"]["invokeStatus"])
-                    ReverseLock(vin,CARLOCKED)
-            else:
-                Error("car did not lock/unlock, webserver returned "+str(status.status_code)+", result: "+sjson)
-                ReverseLock(vin,CARLOCKED)
-
-        except Exception as error:
-            Error("lock/unlock command failed:")
-            Error(error)
+        if InvokeCommand(url,message,LOCKTIMEOUT): 
+            Debug("Lock Command succesfully completed") 
+        else:
+            Error("Lock command failed")
+            #reverse switch again
             ReverseLock(vin,CARLOCKED)
 
 def HandleCommand(vin,command):
     if refresh_token:
         url = "https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + '/commands/' + command
 
-        try:
-            Debug("URL: {}".format(url))
-            status = requests.post(
-                url,
-                headers= {
-                    "Content-Type": "application/json",
-                    "vcc-api-key": vccapikey,
-                    "Authorization": "Bearer " + access_token
-                },
-                timeout=LOCKTIMEOUT
-            )
-
-            Debug("\nResult from "+str(url)+" is "+str(status))
-            #Debug(status)
-            sjson = json.dumps(status.json(), indent=4)
-            Debug("\nResult JSON:")
-            Debug(sjson)
-            if status.status_code==200:
-                if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
-                    Debug("Command succeeded")
-                else:
-                    Error("command failed, API returned code "+status.json()["data"]["invokeStatus"])
-            else:
-                Error("command failed, webserver returned "+str(status.status_code)+", result: "+sjson)
-
-        except Exception as error:
-            Error("command exception:")
-            Error(error)
-
-
+        if InvokeCommand(url,None,LOCKTIMEOUT): 
+            Debug("Command "+command+" succesfully completed") 
+        else:
+            Error("Command "+command+" failed")
+        
 class BasePlugin:
     enabled = False
     def __init__(self):
