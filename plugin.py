@@ -171,6 +171,7 @@ LASTKNOWNLOCATION=79
 LASTTRIP=80
 CURRENTLOCATION=81
 UPDATENOW=82
+OUTSIDEWIND=83
 
 def Debug(text):
     if debugging:
@@ -396,7 +397,8 @@ def UpdateSensor(vn,idx,name,tp,subtp,options,nv,sv):
         if (str(sv)==Devices[vin].Units[idx].sValue and TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()<MAXUPDATEINTERVAL):
             Debug("not updating General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
         else:
-            Devices[vin].Units[idx].nValue = int(nv)
+            if (nv != None):
+                Devices[vin].Units[idx].nValue = int(nv)
             Devices[vin].Units[idx].sValue = sv
             Devices[vin].Units[idx].Update(Log=True)
             Domoticz.Log("General/Custom Sensor ("+Devices[vin].Units[idx].Name+")")
@@ -892,6 +894,11 @@ def DistanceBetweenCoords(coords1,coords2):
     Debug=("Result: ", distance)
     return distance
 
+def degToCompass(num):
+    val=int((num/22.5)+.5)
+    arr=["N","NNE","NE","ENE","E","ESE", "SE", "SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"]
+    return arr[(val % 16)]
+
 def getOutSideTemperature(longitude,latitude):
     global access_token,refresh_token,expirytimestamp
 
@@ -906,6 +913,9 @@ def getOutSideTemperature(longitude,latitude):
             Debug("OpenWeather responded: "+str(response.json()))
             ow=response.json()
             UpdateSensor(vin,OUTSIDETEMP,"Outside Temperature",80,5,None,int(ow["main"]["temp"]),ow["main"]["temp"])
+            WindValue=str(ow["wind"]["deg"])+";"+degToCompass(ow["wind"]["deg"])+";"+str(ow["wind"]["speed"])+";"+str(ow["wind"]["gust"])+";"+str(ow["main"]["temp"])+";"+str(ow["main"]["feels_like"])
+            Debug("Wind value = "+WindValue)
+            UpdateSensor(vin,OUTSIDEWIND,"Outside Wind",86,1,None,None,WindValue)
             
     except Exception as error:
         Error("Openweather call failed")
