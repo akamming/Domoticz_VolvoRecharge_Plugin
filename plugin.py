@@ -914,7 +914,6 @@ def getOutSideTemperature(longitude,latitude):
             ow=response.json()
             UpdateSensor(vin,OUTSIDETEMP,"Outside Temperature",80,5,None,int(ow["main"]["temp"]),ow["main"]["temp"])
             WindValue=str(ow["wind"]["deg"])+";"+degToCompass(ow["wind"]["deg"])+";"+str(ow["wind"]["speed"])+";"+str(ow["wind"]["gust"])+";"+str(ow["main"]["temp"])+";"+str(ow["main"]["feels_like"])
-            Debug("Wind value = "+WindValue)
             UpdateSensor(vin,OUTSIDEWIND,"Outside Wind",86,1,None,None,WindValue)
             
     except Exception as error:
@@ -1053,9 +1052,10 @@ def UpdateLastKnownLocation():
     currentKWHMeter=float(usedkwh[1])
     currentPercentage=Devices[vin].Units[BATTERYCHARGELEVEL].nValue
     currentDatetime = datetime.datetime.now().strftime('%Y/%m/%d %X') # in excel readable format
-    currentTemp="Unknown"
-    if (vin in Devices) and (OUTSIDETEMP in Devices[vin].Units):
-        currentTemp=Devices[vin].Units[OUTSIDETEMP].sValue
+    currentWind="Unknown"
+
+    if (vin in Devices) and (OUTSIDEWIND in Devices[vin].Units):
+        currentWind=Devices[vin].Units[OUTSIDEWIND].sValue
 
     if (not vin in Devices) or (not LASTKNOWNLOCATION in Devices[vin].Units):
         Debug("LastKnownLocation sensor not there, creating")
@@ -1097,7 +1097,7 @@ def UpdateLastKnownLocation():
             UpdateTextSensor(vin,CURRENTLOCATION,"Current Location",currentFriendlyAdress)
 
             #Log to the triplog
-            Tripline=currentDatetime+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+";"+str(TripPercentage)+"%;"+currentTemp+"\n"
+            Tripline=currentDatetime+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+";"+str(TripPercentage)+"%;"+currentWind+"\n"
             filename=Parameters["HomeFolder"]+"triplog.csv"
             if os.path.exists(filename):
                 Debug("existing file, append line")
@@ -1107,12 +1107,12 @@ def UpdateLastKnownLocation():
             else:
                 Debug("New file, include header")
                 f=open(filename,"w")
-                f.write("datetime;from;to;distance;kwh;odometer;usedpercentage;temperature\n")
+                f.write("Datetime;From;To;Distance;kwh;OdoMeter;UsedPercentage;WindDirDegrees;WindDirText;WindSpeed;WindGust;Temp;Temp_feels_like\n")
                 f.write(Tripline)
                 f.close()
 
             #UpdateLastTripSensor
-            LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh, battery "+str(TripPercentage)+" %\nTemperature: "+currentTemp+" C"
+            LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh, battery "+str(TripPercentage)+" %\nTemperature: "+currentWind
             UpdateTextSensor(vin,LASTTRIP,"Last Trip",LastTrip)
 
 def UpdateDevices():
