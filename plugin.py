@@ -746,7 +746,7 @@ def GetCommandAccessabilityStatus():
            if CAStatus["data"]["availabilityStatus"]["unavailableReason"]=="CAR_IN_USE":
                Debug("Car is drving, set current location to unknown")
                UpdateTextSensor(vin,CURRENTLOCATION,"Current Location","Unknown (Car is in use)")
-               carhasmoved=True
+               carhasmoved=True #Make sure the ride is captured in the triplog once finished
         except Exception as error:
             Debug("no unavaible reason found, so car is online, error: "+str(error))
             UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", "Online")
@@ -1040,6 +1040,36 @@ def UpdateBatteryChargeLevelInLastKnownLocation(Percentage):
 
     #Update the Device with the new Percentage
     UpdateLastLocationSensor(Lattitude,Longitude,FriendlyAdress,Odometer,KWHmeter,int(Percentage))
+
+def updateCarHasMoved():
+    global carhasmoved
+
+    #read old values
+    oldLocation=Devices[vin].Units[LASTKNOWNLOCATION].sValue.split(";")
+    oldLattitude=float(oldLocation[0])
+    oldLongitude=float(oldLocation[1])
+    oldOdometer=int(oldLocation[3])
+
+    #get Current Values
+    currentLattitude=float(Devices[vin].Units[LATTITUDE].sValue)
+    currentLongitude=float(Devices[vin].Units[LONGITUDE].sValue)
+    currentOdometer=Devices[vin].Units[ODOMETER].nValue
+
+    #Check if location has changed
+    distance2lastknownlocation=DistanceBetweenCoords((oldLattitude,oldLongitude),(currentLattitude,currentLongitude))
+    if distance2lastknownlocation>MINDIFFBETWEENCOORDS:
+        Debug("distance2lastknownlocation more than "+str(distance2lastknownlocation)+" km")
+        if not carhasmoved:
+            Debug("Correcting carhasmoved status to True")
+            carhasmoved=True
+
+    #check if odometer has changed
+    odoMeterDelta=currentOdometer-oldOdometer
+    if odoMeterDelta>0:
+        Debug("Car drove "+str(odoMeterDelta)+" km")
+        if not carhasmoved:
+            Debug("Correcting carhasmoved status to True")
+            carhasmoved=True
     
 def UpdateLastKnownLocation():
     global carhasmoved
@@ -1072,13 +1102,6 @@ def UpdateLastKnownLocation():
         if len(oldLocation)>5:
             oldPercentage=float(oldLocation[5])
 
-        distance2lastknownlocation=DistanceBetweenCoords((oldLattitude,oldLongitude),(currentLattitude,currentLongitude))
-        if distance2lastknownlocation>MINDIFFBETWEENCOORDS:
-            Debug("distance2lastknownlocation more than "+str(distance2lastknownlocation)+" km")
-            if not carhasmoved:
-                Debug("Correcting carhasmoved status to True")
-                carhasmoved=True
-
         if carhasmoved:
             Debug("Car moved, calculate difference and write to triplog.csv")
 
@@ -1090,14 +1113,15 @@ def UpdateLastKnownLocation():
             TripUsage=round((currentKWHMeter-oldKWHmeter)/1000,2)
             TripPercentage=int(oldPercentage-currentPercentage)
             currentFriendlyAdress=GetFriendlyAdress(currentLattitude,currentLongitude)
-            Debug("Car drove "+str(Triplength)+" kms and used "+str(TripUsage)+" kwh's to "+currentFriendlyAdress)
+            TripDuration=TimeElapsedSinceLastUpdate(Devices[vin].Units[LASTKNOWNLOCATION].LastUpdate)
+            TripSpeed=int(Triplength/(TripDuration.total_seconds()/3600))
 
             #Update the sensros
             UpdateLastLocationSensor(currentLattitude,currentLongitude,currentFriendlyAdress,currentOdometer,currentKWHMeter,currentPercentage)
             UpdateTextSensor(vin,CURRENTLOCATION,"Current Location",currentFriendlyAdress)
 
             #Log to the triplog
-            Tripline=currentDatetime+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+";"+str(TripPercentage)+"%;"+currentWind+"\n"
+            Tripline=currentDatetime+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+";"+str(TripPercentage)+"%;"+currentWind+";"+str(TripDuration)+";"+str(TripSpeed)+"\n"
             filename=Parameters["HomeFolder"]+"triplog.csv"
             if os.path.exists(filename):
                 Debug("existing file, append line")
@@ -1107,12 +1131,12 @@ def UpdateLastKnownLocation():
             else:
                 Debug("New file, include header")
                 f=open(filename,"w")
-                f.write("Datetime;From;To;Distance;kwh;OdoMeter;UsedPercentage;WindDirDegrees;WindDirText;WindSpeed;WindGust;Temp;Temp_feels_like\n")
+                f.write("Datetime;From;To;Distance;kwh;OdoMeter;UsedPercentage;WindDirDegrees;WindDirText;WindSpeed;WindGust;Temp;Temp_feels_like;TripDuration;TripSpeed\n")
                 f.write(Tripline)
                 f.close()
 
             #UpdateLastTripSensor
-            LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh, battery "+str(TripPercentage)+" %\nTemperature: "+currentWind
+            LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh, Battery:  "+str(TripPercentage)+" %\nTemperature: "+currentWind+"\nDuration: "+str(TripDuration)+"\nSpeed: "+str(TripSpeed)+" km/h"
             UpdateTextSensor(vin,LASTTRIP,"Last Trip",LastTrip)
 
 def UpdateDevices():
@@ -1123,25 +1147,24 @@ def UpdateDevices():
     lastupdate=time.time()
     GetCommandAccessabilityStatus() # check if we can update
     if (Devices[vin].Units[AVAILABILITYSTATUS].sValue=="AVAILABLE" or Devices[vin].Units[UNAVAILABLEREASON].sValue=="CAR_IN_USE"):
-        GetLocation() #Location must be known before GetRechargeStatus te detect local charging
-        GetDoorWindowAndLockStatus()
+        GetOdoMeter() #Odometer must be known before GetRechargeStatus to detect if car has moved
+        GetLocation() #Location must be known before GetRechargeStatus te detect local charging and to detect if carhasmoved
+        updateCarHasMoved() #Check if the carhasmoved
+
+        GetDoorWindowAndLockStatus() #also check for open windows while driving
         if batteryPackSize:
             GetRechargeStatus()
         else:
             Debug("No (Partial) EV features, don't call GetRechargeStatus")
-        if Devices[vin].Units[UNAVAILABLEREASON].nValue==0:
-            GetOdoMeter() 
-            GetTyreStatus()
-            GetDiagnostics()
-            GetEngineStatus() 
-            GetEngine()
-            GetWarnings()
-            if Devices[vin].Units[UNAVAILABLEREASON].sValue!="CAR_IN_USE":
-                UpdateLastKnownLocation()
-            else:
-                Debug("Car in use, don't try to update location")
+        GetTyreStatus()
+        GetDiagnostics()
+        GetEngineStatus() 
+        GetEngine()
+        GetWarnings()
+        if Devices[vin].Units[UNAVAILABLEREASON].sValue!="CAR_IN_USE":
+            UpdateLastKnownLocation()
         else:
-            Debug("Car in use, skipping several API calls")
+            Debug("Car in use, don't try to update location")
     else:
         Error("Car unavailable, check AVAILABILTYSTATUS sensor to see why the car is unavailable")
 
