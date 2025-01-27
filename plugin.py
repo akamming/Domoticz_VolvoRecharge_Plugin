@@ -86,7 +86,6 @@ climatizationactionid=None
 climatizationstoptimestamp=time.time()
 lastloginattempttimestamp=time.time()-MINTIMEBETWEENLOGINATTEMPTS
 ACCharging=True; #if unknown, assume AC charger at the beginning
-carhasmoved=False
 
 #Device Numbers
 REMAININGRANGE=1
@@ -172,6 +171,7 @@ LASTTRIP=80
 CURRENTLOCATION=81
 UPDATENOW=82
 OUTSIDEWIND=83
+CARHASMOVED=84
 
 def Debug(text):
     if debugging:
@@ -483,13 +483,13 @@ def CreatePushButton(vn,idx,name):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=1, DeviceID=vn, Used=False).Create()
 
 
-def UpdateSwitch(vn,idx,name,nv,sv):
+def UpdateSwitch(vn,idx,name,nv,sv,ForceUpdate=False):
     Debug ("UpdateSwitch("+str(vn)+","+str(idx)+","+str(name)+","+str(nv)+","+str(sv)+" called")
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, DeviceID=vn, Used=False).Create()
 
     try:
-        if (Devices[vin].Units[idx].nValue==nv and Devices[vin].Units[idx].sValue==sv and TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()<MAXUPDATEINTERVAL):
+        if (Devices[vin].Units[idx].nValue==nv and Devices[vin].Units[idx].sValue==sv and TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()<MAXUPDATEINTERVAL and ForceUpdate==False):
             Debug("Switch status unchanged, not updating "+Devices[vin].Units[idx].Name)
         else:
             Debug("Changing from + "+str(Devices[vin].Units[idx].nValue)+","+Devices[vin].Units[idx].sValue+" to "+str(nv)+","+str(sv))
@@ -734,8 +734,6 @@ def GetDiagnostics():
         Debug(error)
 
 def GetCommandAccessabilityStatus():
-    global carhasmoved
-
     Debug("GetCommandAccessibilityStatus() called")
     CAStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/command-accessibility","application/json")
     if CAStatus:
@@ -746,7 +744,7 @@ def GetCommandAccessabilityStatus():
            if CAStatus["data"]["availabilityStatus"]["unavailableReason"]=="CAR_IN_USE":
                Debug("Car is drving, set current location to unknown")
                UpdateTextSensor(vin,CURRENTLOCATION,"Current Location","Unknown (Car is in use)")
-               carhasmoved=True #Make sure the ride is captured in the triplog once finished
+               UpdateSwitch(vin,CARHASMOVED,"Car is moving or moved",1,"On")
         except Exception as error:
             Debug("no unavaible reason found, so car is online, error: "+str(error))
             UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", "Online")
@@ -757,7 +755,6 @@ def GetCommandAccessabilityStatus():
 def GetRechargeStatus():
     global batteryPackSize
     global ACCharging
-    global carhasmoved
 
     Debug("GetRechargeStatus() called")
     RechargeStatus=VolvoAPI("https://api.volvocars.com/energy/v1/vehicles/"+vin+"/recharge-status","application/vnd.volvocars.api.energy.vehicledata.v1+json")
@@ -801,7 +798,7 @@ def GetRechargeStatus():
             #Update kwh counters
             DeltaPercentageBattery=int(float(RechargeStatus["data"]["batteryChargeLevel"]["value"])-float(Devices[vin].Units[BATTERYCHARGELEVEL].sValue))
 
-            if DeltaPercentageBattery!=0 and not carhasmoved:
+            if DeltaPercentageBattery!=0 and Devices[vin].Units[CARHASMOVED].nValue==0:
                 Debug("SOC is changing while car is not moving, Updating battery percentage in last known location")
                 UpdateBatteryChargeLevelInLastKnownLocation(float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))
             else:
@@ -1042,7 +1039,14 @@ def UpdateBatteryChargeLevelInLastKnownLocation(Percentage):
     UpdateLastLocationSensor(Lattitude,Longitude,FriendlyAdress,Odometer,KWHmeter,int(Percentage))
 
 def updateCarHasMoved():
-    global carhasmoved
+    carhasmoved=False
+
+    if (vin in Devices and CARHASMOVED in Devices[vin].Units):
+        Debug("CARHASMOVED button exists")
+        if Devices[vin].Units[CARHASMOVED].nValue==1:
+            carhasmoved=True
+        else:
+            carhasmoved=False
 
     #read old values
     oldLocation=Devices[vin].Units[LASTKNOWNLOCATION].sValue.split(";")
@@ -1059,21 +1063,26 @@ def updateCarHasMoved():
     distance2lastknownlocation=DistanceBetweenCoords((oldLattitude,oldLongitude),(currentLattitude,currentLongitude))
     if distance2lastknownlocation>MINDIFFBETWEENCOORDS:
         Debug("distance2lastknownlocation more than "+str(distance2lastknownlocation)+" km")
-        if not carhasmoved:
-            Debug("Correcting carhasmoved status to True")
+        if Devices[vin].Units[CARHASMOVED].nValue==0:
             carhasmoved=True
 
     #check if odometer has changed
     odoMeterDelta=currentOdometer-oldOdometer
     if odoMeterDelta>0:
         Debug("Car drove "+str(odoMeterDelta)+" km")
-        if not carhasmoved:
-            Debug("Correcting carhasmoved status to True")
+        if Devices[vin].Units[CARHASMOVED].nValue==0:
             carhasmoved=True
     
-def UpdateLastKnownLocation():
-    global carhasmoved
+    #pdate the switch
+    if carhasmoved:
+        Debug("Setting CARHASMOVED to on")
+        UpdateSwitch(vin,CARHASMOVED,"Car is moving or moved",1,"On")
+    else:
+        Debug("Setting CARHASMOVED to off")
+        UpdateSwitch(vin,CARHASMOVED,"Car is moving or moved",0,"Off",True)
 
+    
+def UpdateLastKnownLocation():
     #build up line
     currentLattitude=float(Devices[vin].Units[LATTITUDE].sValue)
     currentLongitude=float(Devices[vin].Units[LONGITUDE].sValue)
@@ -1102,21 +1111,19 @@ def UpdateLastKnownLocation():
         if len(oldLocation)>5:
             oldPercentage=float(oldLocation[5])
 
-        if carhasmoved:
+        if Devices[vin].Units[CARHASMOVED].nValue==1:
             Debug("Car moved, calculate difference and write to triplog.csv")
-
-            #Reset flag to prevent duplicate entries
-            carhasmoved=False
 
             #calculate new location and differences
             Triplength=currentOdometer-oldOdometer
             TripUsage=round((currentKWHMeter-oldKWHmeter)/1000,2)
             TripPercentage=int(oldPercentage-currentPercentage)
             currentFriendlyAdress=GetFriendlyAdress(currentLattitude,currentLongitude)
-            TripDuration=TimeElapsedSinceLastUpdate(Devices[vin].Units[LASTKNOWNLOCATION].LastUpdate)
-            TripSpeed=int(Triplength/(TripDuration.total_seconds()/3600))
+            TripDuration=TimeElapsedSinceLastUpdate(Devices[vin].Units[CARHASMOVED].LastUpdate)
+            TripSpeed=int(((Triplength*1000.0)/TripDuration.total_seconds())*3.6)
 
             #Update the sensros
+            UpdateSwitch(vin,CARHASMOVED,"Car is moving or moved",0,"Off") #Reset flag to prevent duplicate entries
             UpdateLastLocationSensor(currentLattitude,currentLongitude,currentFriendlyAdress,currentOdometer,currentKWHMeter,currentPercentage)
             UpdateTextSensor(vin,CURRENTLOCATION,"Current Location",currentFriendlyAdress)
 
@@ -1420,6 +1427,11 @@ class BasePlugin:
                 UpdateSwitch(vin,ABRPSYNC,"ABRPSYNC",1,Command)
             else:
                 UpdateSwitch(vin,ABRPSYNC,"ABRPSYNC",0,Command)
+        elif Unit==CARHASMOVED:
+            if Command=='On':
+                UpdateSwitch(vin,CARHASMOVED,"Car has moved or is moving",1,Command)
+            else:
+                UpdateSwitch(vin,CARHASMOVED,"Car has moved or is moving",0,Command)
         elif Unit==HONK:
             Debug("Send Honk command")
             HandleCommand(DeviceID,"honk")
