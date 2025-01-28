@@ -1429,10 +1429,11 @@ class BasePlugin:
             else:
                 UpdateSwitch(vin,ABRPSYNC,"ABRPSYNC",0,Command)
         elif Unit==CARHASMOVED:
-            if Command=='On':
-                UpdateSwitch(vin,CARHASMOVED,"Car has moved or is moving",1,Command)
-            else:
-                UpdateSwitch(vin,CARHASMOVED,"Car has moved or is moving",0,Command)
+            if debugging:
+                if Command=='On':
+                    UpdateSwitch(vin,CARHASMOVED,"Car has moved or is moving",1,Command)
+                else:
+                    UpdateSwitch(vin,CARHASMOVED,"Car has moved or is moving",0,Command)
         elif Unit==HONK:
             Debug("Send Honk command")
             HandleCommand(DeviceID,"honk")
