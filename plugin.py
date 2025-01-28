@@ -1119,7 +1119,8 @@ def UpdateLastKnownLocation():
             TripUsage=round((currentKWHMeter-oldKWHmeter)/1000,2)
             TripPercentage=int(oldPercentage-currentPercentage)
             currentFriendlyAdress=GetFriendlyAdress(currentLattitude,currentLongitude)
-            TripDuration=TimeElapsedSinceLastUpdate(Devices[vin].Units[CARHASMOVED].LastUpdate)
+            TripDurationPrecise=TimeElapsedSinceLastUpdate(Devices[vin].Units[CARHASMOVED].LastUpdate)
+            TripDuration=datetime.timedelta(seconds=TripDurationPrecise.seconds) #strip the microseconds
             TripSpeed=int(((Triplength*1000.0)/TripDuration.total_seconds())*3.6)
 
             #Update the sensros
