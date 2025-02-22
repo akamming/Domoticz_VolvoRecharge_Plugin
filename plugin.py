@@ -1041,37 +1041,41 @@ def UpdateBatteryChargeLevelInLastKnownLocation(Percentage):
 def updateCarHasMoved():
     carhasmoved=False
 
-    if (vin in Devices and CARHASMOVED in Devices[vin].Units):
-        Debug("CARHASMOVED button exists")
-        if Devices[vin].Units[CARHASMOVED].nValue==1:
-            carhasmoved=True
-        else:
-            carhasmoved=False
+    try:
+        if (vin in Devices and CARHASMOVED in Devices[vin].Units):
+            Debug("CARHASMOVED button exists")
+            if Devices[vin].Units[CARHASMOVED].nValue==1:
+                carhasmoved=True
+            else:
+                carhasmoved=False
 
-    #read old values
-    oldLocation=Devices[vin].Units[LASTKNOWNLOCATION].sValue.split(";")
-    oldLattitude=float(oldLocation[0])
-    oldLongitude=float(oldLocation[1])
-    oldOdometer=int(oldLocation[3])
+        #read old values
+        oldLocation=Devices[vin].Units[LASTKNOWNLOCATION].sValue.split(";")
+        oldLattitude=float(oldLocation[0])
+        oldLongitude=float(oldLocation[1])
+        oldOdometer=int(oldLocation[3])
 
-    #get Current Values
-    currentLattitude=float(Devices[vin].Units[LATTITUDE].sValue)
-    currentLongitude=float(Devices[vin].Units[LONGITUDE].sValue)
-    currentOdometer=Devices[vin].Units[ODOMETER].nValue
+        #get Current Values
+        currentLattitude=float(Devices[vin].Units[LATTITUDE].sValue)
+        currentLongitude=float(Devices[vin].Units[LONGITUDE].sValue)
+        currentOdometer=Devices[vin].Units[ODOMETER].nValue
 
-    #Check if location has changed
-    distance2lastknownlocation=DistanceBetweenCoords((oldLattitude,oldLongitude),(currentLattitude,currentLongitude))
-    if distance2lastknownlocation>MINDIFFBETWEENCOORDS:
-        Debug("distance2lastknownlocation more than "+str(distance2lastknownlocation)+" km")
-        if Devices[vin].Units[CARHASMOVED].nValue==0:
-            carhasmoved=True
+        #Check if location has changed
+        distance2lastknownlocation=DistanceBetweenCoords((oldLattitude,oldLongitude),(currentLattitude,currentLongitude))
+        if distance2lastknownlocation>MINDIFFBETWEENCOORDS:
+            Debug("distance2lastknownlocation more than "+str(distance2lastknownlocation)+" km")
+            if Devices[vin].Units[CARHASMOVED].nValue==0:
+                carhasmoved=True
 
-    #check if odometer has changed
-    odoMeterDelta=currentOdometer-oldOdometer
-    if odoMeterDelta>0:
-        Debug("Car drove "+str(odoMeterDelta)+" km")
-        if Devices[vin].Units[CARHASMOVED].nValue==0:
-            carhasmoved=True
+        #check if odometer has changed
+        odoMeterDelta=currentOdometer-oldOdometer
+        if odoMeterDelta>0:
+            Debug("Car drove "+str(odoMeterDelta)+" km")
+            if Devices[vin].Units[CARHASMOVED].nValue==0:
+                carhasmoved=True
+    
+    except Exception as error:
+        Debug("Exception updating carhasmoved status: "+str(error))
     
     #pdate the switch
     if carhasmoved:
@@ -1083,69 +1087,73 @@ def updateCarHasMoved():
 
     
 def UpdateLastKnownLocation():
-    #build up line
-    currentLattitude=float(Devices[vin].Units[LATTITUDE].sValue)
-    currentLongitude=float(Devices[vin].Units[LONGITUDE].sValue)
-    currentOdometer=Devices[vin].Units[ODOMETER].nValue
-    usedkwh=Devices[vin].Units[USEDKWH].sValue.split(";")
-    currentKWHMeter=float(usedkwh[1])
-    currentPercentage=Devices[vin].Units[BATTERYCHARGELEVEL].nValue
-    currentDatetime = datetime.datetime.now().strftime('%Y/%m/%d %X') # in excel readable format
-    currentWind="Unknown"
+    try:
+        #build up line
+        currentLattitude=float(Devices[vin].Units[LATTITUDE].sValue)
+        currentLongitude=float(Devices[vin].Units[LONGITUDE].sValue)
+        currentOdometer=Devices[vin].Units[ODOMETER].nValue
+        usedkwh=Devices[vin].Units[USEDKWH].sValue.split(";")
+        currentKWHMeter=float(usedkwh[1])
+        currentPercentage=Devices[vin].Units[BATTERYCHARGELEVEL].nValue
+        currentDatetime = datetime.datetime.now().strftime('%Y/%m/%d %X') # in excel readable format
+        currentWind="Unknown"
 
-    if (vin in Devices) and (OUTSIDEWIND in Devices[vin].Units):
-        currentWind=Devices[vin].Units[OUTSIDEWIND].sValue
+        if (vin in Devices) and (OUTSIDEWIND in Devices[vin].Units):
+            currentWind=Devices[vin].Units[OUTSIDEWIND].sValue
 
-    if (not vin in Devices) or (not LASTKNOWNLOCATION in Devices[vin].Units):
-        Debug("LastKnownLocation sensor not there, creating")
-        UpdateLastLocationSensor(currentLattitude,currentLongitude,GetFriendlyAdress(currentLattitude,currentLongitude),currentOdometer,currentKWHMeter,currentPercentage)
-    else:
-        #Get old values
-        oldLocation=Devices[vin].Units[LASTKNOWNLOCATION].sValue.split(";")
-        oldLattitude=float(oldLocation[0])
-        oldLongitude=float(oldLocation[1])
-        oldFriendlyAdress=oldLocation[2]
-        oldOdometer=int(oldLocation[3])
-        oldKWHmeter=float(oldLocation[4])
-        oldPercentage=0
-        if len(oldLocation)>5:
-            oldPercentage=float(oldLocation[5])
+        if (not vin in Devices) or (not LASTKNOWNLOCATION in Devices[vin].Units):
+            Debug("LastKnownLocation sensor not there, creating")
+            UpdateLastLocationSensor(currentLattitude,currentLongitude,GetFriendlyAdress(currentLattitude,currentLongitude),currentOdometer,currentKWHMeter,currentPercentage)
+        else:
+            #Get old values
+            oldLocation=Devices[vin].Units[LASTKNOWNLOCATION].sValue.split(";")
+            oldLattitude=float(oldLocation[0])
+            oldLongitude=float(oldLocation[1])
+            oldFriendlyAdress=oldLocation[2]
+            oldOdometer=int(oldLocation[3])
+            oldKWHmeter=float(oldLocation[4])
+            oldPercentage=0
+            if len(oldLocation)>5:
+                oldPercentage=float(oldLocation[5])
 
-        if Devices[vin].Units[CARHASMOVED].nValue==1:
-            Debug("Car moved, calculate difference and write to triplog.csv")
+            if Devices[vin].Units[CARHASMOVED].nValue==1:
+                Debug("Car moved, calculate difference and write to triplog.csv")
 
-            #calculate new location and differences
-            Triplength=currentOdometer-oldOdometer
-            TripUsage=round((currentKWHMeter-oldKWHmeter)/1000,2)
-            TripPercentage=int(oldPercentage-currentPercentage)
-            currentFriendlyAdress=GetFriendlyAdress(currentLattitude,currentLongitude)
-            TripDurationPrecise=TimeElapsedSinceLastUpdate(Devices[vin].Units[CARHASMOVED].LastUpdate)
-            TripDuration=datetime.timedelta(seconds=TripDurationPrecise.seconds) #strip the microseconds
-            TripSpeed=int(((Triplength*1000.0)/TripDuration.total_seconds())*3.6)
+                #calculate new location and differences
+                Triplength=currentOdometer-oldOdometer
+                TripUsage=round((currentKWHMeter-oldKWHmeter)/1000,2)
+                TripPercentage=int(oldPercentage-currentPercentage)
+                currentFriendlyAdress=GetFriendlyAdress(currentLattitude,currentLongitude)
+                TripDurationPrecise=TimeElapsedSinceLastUpdate(Devices[vin].Units[CARHASMOVED].LastUpdate)
+                TripDuration=datetime.timedelta(seconds=TripDurationPrecise.seconds) #strip the microseconds
+                TripSpeed=int(((Triplength*1000.0)/TripDuration.total_seconds())*3.6)
 
-            #Update the sensros
-            UpdateSwitch(vin,CARHASMOVED,"Car is moving or moved",0,"Off") #Reset flag to prevent duplicate entries
-            UpdateLastLocationSensor(currentLattitude,currentLongitude,currentFriendlyAdress,currentOdometer,currentKWHMeter,currentPercentage)
-            UpdateTextSensor(vin,CURRENTLOCATION,"Current Location",currentFriendlyAdress)
+                #Update the sensros
+                UpdateSwitch(vin,CARHASMOVED,"Car is moving or moved",0,"Off") #Reset flag to prevent duplicate entries
+                UpdateLastLocationSensor(currentLattitude,currentLongitude,currentFriendlyAdress,currentOdometer,currentKWHMeter,currentPercentage)
+                UpdateTextSensor(vin,CURRENTLOCATION,"Current Location",currentFriendlyAdress)
 
-            #Log to the triplog
-            Tripline=currentDatetime+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+";"+str(TripPercentage)+"%;"+currentWind+";"+str(TripDuration)+";"+str(TripSpeed)+"\n"
-            filename=Parameters["HomeFolder"]+"triplog.csv"
-            if os.path.exists(filename):
-                Debug("existing file, append line")
-                f=open(filename,"a")
-                f.write(Tripline)
-                f.close()
-            else:
-                Debug("New file, include header")
-                f=open(filename,"w")
-                f.write("Datetime;From;To;Distance;kwh;OdoMeter;UsedPercentage;WindDirDegrees;WindDirText;WindSpeed;WindGust;Temp;Temp_feels_like;TripDuration;TripSpeed\n")
-                f.write(Tripline)
-                f.close()
+                #Log to the triplog
+                Tripline=currentDatetime+";"+oldFriendlyAdress+";"+currentFriendlyAdress+";"+str(Triplength)+";"+str(TripUsage)+";"+str(currentOdometer)+";"+str(TripPercentage)+"%;"+currentWind+";"+str(TripDuration)+";"+str(TripSpeed)+"\n"
+                filename=Parameters["HomeFolder"]+"triplog.csv"
+                if os.path.exists(filename):
+                    Debug("existing file, append line")
+                    f=open(filename,"a")
+                    f.write(Tripline)
+                    f.close()
+                else:
+                    Debug("New file, include header")
+                    f=open(filename,"w")
+                    f.write("Datetime;From;To;Distance;kwh;OdoMeter;UsedPercentage;WindDirDegrees;WindDirText;WindSpeed;WindGust;Temp;Temp_feels_like;TripDuration;TripSpeed\n")
+                    f.write(Tripline)
+                    f.close()
 
-            #UpdateLastTripSensor
-            LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh, Battery:  "+str(TripPercentage)+" %\nTemperature: "+currentWind+"\nDuration: "+str(TripDuration)+"\nSpeed: "+str(TripSpeed)+" km/h"
-            UpdateTextSensor(vin,LASTTRIP,"Last Trip",LastTrip)
+                #UpdateLastTripSensor
+                LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh, Battery:  "+str(TripPercentage)+" %\nTemperature: "+currentWind+"\nDuration: "+str(TripDuration)+"\nSpeed: "+str(TripSpeed)+" km/h"
+                UpdateTextSensor(vin,LASTTRIP,"Last Trip",LastTrip)
+    
+    except Exception as error:
+        Debug("Updating Last Known Location Failed: "+str(error))
 
 def UpdateDevices():
     global lastupdate
