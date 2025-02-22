@@ -1007,7 +1007,12 @@ def GetFriendlyAdress(lattitude,longitude):
         response=requests.get(url,timeout=TIMEOUT)
         if response.status_code==200:
             try:
-                FriendlyAdress=response.json()["results"][0]["formatted_address"]
+                if response.json()["status"]=="OK":
+                    FriendlyAdress=response.json()["results"][0]["formatted_address"]
+                else:
+                    FriendlyAdress="Unknown Adress"
+                    Error("Google Geo Code Status: "+response.json()["status"])
+                    Debug(json.dumps(response.json(),indent=4))
             except Exception as error:
                 Error("Error getting friendly adress"+str(error))
                 Error("Google response: "+response.text)
