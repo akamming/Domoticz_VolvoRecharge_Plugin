@@ -59,6 +59,7 @@ import time
 from math import sin, cos, sqrt, atan2, radians
 import configparser
 import os.path
+#import sys, traceback
 
 #Constants
 TIMEOUT=60 #timeout for API requests
@@ -745,6 +746,7 @@ def GetCommandAccessabilityStatus():
                Debug("Car is drving, set current location to unknown")
                UpdateTextSensor(vin,CURRENTLOCATION,"Current Location","Unknown (Car is in use)")
                UpdateSwitch(vin,CARHASMOVED,"Car is moving or moved",1,"On")
+
         except Exception as error:
             Debug("no unavaible reason found, so car is online, error: "+str(error))
             UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", "Online")
@@ -1011,7 +1013,7 @@ def GetFriendlyAdress(lattitude,longitude):
                     FriendlyAdress=response.json()["results"][0]["formatted_address"]
                 else:
                     FriendlyAdress="Unknown Adress"
-                    Error("Google Geo Code Status: "+response.json()["status"])
+                    Error("Google Geo Code Error (Did you enter a valid Google Geo Code API key in the config?) : "+response.json()["status"])
                     Debug(json.dumps(response.json(),indent=4))
             except Exception as error:
                 Error("Error getting friendly adress"+str(error))
@@ -1157,8 +1159,9 @@ def UpdateLastKnownLocation():
                 LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh, Battery:  "+str(TripPercentage)+" %\nTemperature: "+currentWind+"\nDuration: "+str(TripDuration)+"\nSpeed: "+str(TripSpeed)+" km/h"
                 UpdateTextSensor(vin,LASTTRIP,"Last Trip",LastTrip)
     
-    except Exception as error:
-        Debug("Updating Last Known Location Failed: "+str(error))
+    except KeyError as error:
+        Debug("don't update triplog/last known location, not all devices are available yet: "+repr(error))
+        #Debug("Exception: "+repr(traceback.format_tb(error.__traceback__)))
 
 def UpdateDevices():
     global lastupdate
