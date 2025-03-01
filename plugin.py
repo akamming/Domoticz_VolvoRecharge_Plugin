@@ -69,6 +69,7 @@ MINTIMEBETWEENLOGINATTEMPTS=600 #10 mins
 HOMECHARGINGRADIUS=0.025 # 25 meter (assume the car is using the home charger when with 25 meters)
 MINDIFFBETWEENCOORDS=0.025 # Only record new trip if new destination is further away than this distance from the previous location
 MAXUPDATEINTERVAL=24*3600 # Max number of seconds every sensor has to update when value has not changed, defaults to once per day
+TIMETOSETKWHMETERTOZERO=300 #Report 0 usage if no more updates
 
 #global vars
 abrp_api_key=None
@@ -847,7 +848,7 @@ def GetRechargeStatus():
                     Error("No Distance 2 home device, also not creating/updating athome/public charging kwh counters")
             else:
                 #reset powerlevel if batterlevel has not changed for  5 mins
-                if TimeElapsedSinceLastUpdate(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate).total_seconds()>=300:
+                if TimeElapsedSinceLastUpdate(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate).total_seconds()>=TIMETOSETKWHMETERTOZERO
                     Debug("Car is not using or charging energy")
                     IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
                     IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
