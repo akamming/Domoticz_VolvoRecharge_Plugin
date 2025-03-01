@@ -848,7 +848,8 @@ def GetRechargeStatus():
                     Error("No Distance 2 home device, also not creating/updating athome/public charging kwh counters")
             else:
                 #reset powerlevel if batterlevel has not changed for  5 mins
-                if TimeElapsedSinceLastUpdate(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate).total_seconds()>=TIMETOSETKWHMETERTOZERO
+                #if TimeElapsedSinceLastUpdate(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate).total_seconds()>=TIMETOSETKWHMETERTOZERO or not (vin in Devices and USEDKWH in Devices[vin].Units in CHARGEDTOTAL not in Devices[vin].Units):
+                if TimeElapsedSinceLastUpdate(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate).total_seconds()>=TIMETOSETKWHMETERTOZERO:
                     Debug("Car is not using or charging energy")
                     IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
                     IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
@@ -865,6 +866,14 @@ def GetRechargeStatus():
                     Debug("timeout not expired yet, not resetting counters")
         else:
             Debug("No previous batterypercentagemeasurement, ignoring the updates to KWH meters")
+
+            #Do create the kwhmeters (if not present) to prevent errors on stattup
+            IncreaseKWHMeter(vin,CHARGEDTOTAL, "chargedTotal", 0) 
+            IncreaseKWHMeter(vin,USEDKWH, "usedKWH", 0)
+            IncreaseKWHMeter(vin,CHARGEDATHOME,"chargedAtHome",0)
+            IncreaseKWHMeter(vin,CHARGEDPUBLIC,"chargedPublic",0)
+            IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC",0)
+            IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC",0)
 
         
         #update Percentage Device
