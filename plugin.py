@@ -751,9 +751,12 @@ def GetCommandAccessabilityStatus():
         except Exception as error:
             Debug("no unavaible reason found, so car is online, error: "+str(error))
             UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", "Online")
+            if (Devices[vin].Units[AVAILABILITYSTATUS].sValue!="AVAILABLE" and Devices[vin].Units[UNAVAILABLEREASON].sValue!="CAR_IN_USE"):
+                Error("Car unavailable, check AVAILABILTYSTATUS sensor to see why the car is unavailable")
+            else:
+                Debug("Car is available")
     else:
         Error("Updating Command Accessability failed")
-
 
 def GetRechargeStatus():
     global batteryPackSize
@@ -1180,27 +1183,23 @@ def UpdateDevices():
     Debug("UpdateDevices() Called")
     lastupdate=time.time()
     GetCommandAccessabilityStatus() # check if we can update
-    if (Devices[vin].Units[AVAILABILITYSTATUS].sValue=="AVAILABLE" or Devices[vin].Units[UNAVAILABLEREASON].sValue=="CAR_IN_USE"):
-        GetOdoMeter() #Odometer must be known before GetRechargeStatus to detect if car has moved
-        GetLocation() #Location must be known before GetRechargeStatus te detect local charging and to detect if carhasmoved
-        updateCarHasMoved() #Check if the carhasmoved
-
-        GetDoorWindowAndLockStatus() #also check for open windows while driving
-        if batteryPackSize:
-            GetRechargeStatus()
-        else:
-            Debug("No (Partial) EV features, don't call GetRechargeStatus")
-        GetTyreStatus()
-        GetDiagnostics()
-        GetEngineStatus() 
-        GetEngine()
-        GetWarnings()
-        if Devices[vin].Units[UNAVAILABLEREASON].sValue!="CAR_IN_USE":
-            UpdateLastKnownLocation()
-        else:
-            Debug("Car in use, don't try to update location")
+    GetOdoMeter() #Odometer must be known before GetRechargeStatus to detect if car has moved
+    GetLocation() #Location must be known before GetRechargeStatus te detect local charging and to detect if carhasmoved
+    updateCarHasMoved() #Check if the carhasmoved
+    GetDoorWindowAndLockStatus() #also check for open windows while driving
+    if batteryPackSize:
+        GetRechargeStatus()
     else:
-        Error("Car unavailable, check AVAILABILTYSTATUS sensor to see why the car is unavailable")
+        Debug("No (Partial) EV features, don't call GetRechargeStatus")
+    GetTyreStatus()
+    GetDiagnostics()
+    GetEngineStatus() 
+    GetEngine()
+    GetWarnings()
+    if Devices[vin].Units[UNAVAILABLEREASON].sValue!="CAR_IN_USE":
+        UpdateLastKnownLocation()
+    else:
+        Debug("Car in use, don't try to update location")
 
 def Heartbeat():
     global lastupdate
@@ -1210,6 +1209,7 @@ def Heartbeat():
     CheckRefreshToken()
 
     if vin:
+        #Make sure we have the control buttons
         CreatePushButton(vin,FLASH,"Flash")
         CreatePushButton(vin,HONK,"Honk")
         CreatePushButton(vin,HONKFLASH,"Honk and Flash")
