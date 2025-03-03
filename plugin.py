@@ -751,10 +751,11 @@ def GetCommandAccessabilityStatus():
         except Exception as error:
             Debug("no unavaible reason found, so car is online, error: "+str(error))
             UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", "Online")
-            if (Devices[vin].Units[AVAILABILITYSTATUS].sValue!="AVAILABLE" and Devices[vin].Units[UNAVAILABLEREASON].sValue!="CAR_IN_USE"):
-                Error("Car unavailable, check AVAILABILTYSTATUS sensor to see why the car is unavailable")
-            else:
-                Debug("Car is available")
+
+        if (Devices[vin].Units[AVAILABILITYSTATUS].sValue!="AVAILABLE" and Devices[vin].Units[UNAVAILABLEREASON].sValue!="CAR_IN_USE"):
+            Error("Car unavailable, check AVAILABILTYSTATUS sensor to see why the car is unavailable")
+        else:
+            Debug("Car is available")
     else:
         Error("Updating Command Accessability failed")
 
@@ -1107,6 +1108,7 @@ def updateCarHasMoved():
 
     
 def UpdateLastKnownLocation():
+    Debug("UpdateLastKnownLocation() called")
     try:
         #build up line
         currentLattitude=float(Devices[vin].Units[LATTITUDE].sValue)
@@ -1125,19 +1127,21 @@ def UpdateLastKnownLocation():
             Debug("LastKnownLocation sensor not there, creating")
             UpdateLastLocationSensor(currentLattitude,currentLongitude,GetFriendlyAdress(currentLattitude,currentLongitude),currentOdometer,currentKWHMeter,currentPercentage)
         else:
-            #Get old values
-            oldLocation=Devices[vin].Units[LASTKNOWNLOCATION].sValue.split(";")
-            oldLattitude=float(oldLocation[0])
-            oldLongitude=float(oldLocation[1])
-            oldFriendlyAdress=oldLocation[2]
-            oldOdometer=int(oldLocation[3])
-            oldKWHmeter=float(oldLocation[4])
-            oldPercentage=0
-            if len(oldLocation)>5:
-                oldPercentage=float(oldLocation[5])
+            Debug("LastKnownLocation present, checking if we have to update and / or record a trip")
 
             if Devices[vin].Units[CARHASMOVED].nValue==1:
                 Debug("Car moved, calculate difference and write to triplog.csv")
+
+                #Get old values
+                oldLocation=Devices[vin].Units[LASTKNOWNLOCATION].sValue.split(";")
+                oldLattitude=float(oldLocation[0])
+                oldLongitude=float(oldLocation[1])
+                oldFriendlyAdress=oldLocation[2]
+                oldOdometer=int(oldLocation[3])
+                oldKWHmeter=float(oldLocation[4])
+                oldPercentage=0
+                if len(oldLocation)>5:
+                    oldPercentage=float(oldLocation[5])
 
                 #calculate new location and differences
                 Triplength=currentOdometer-oldOdometer
@@ -1171,6 +1175,8 @@ def UpdateLastKnownLocation():
                 #UpdateLastTripSensor
                 LastTrip =  "Date/Time: "+str(datetime.datetime.now())+"\nFrom: "+oldFriendlyAdress+"\nTo: "+currentFriendlyAdress+"\nDistance: "+str(Triplength)+" km, Usage: "+str(TripUsage)+" kwh, Battery:  "+str(TripPercentage)+" %\nTemperature: "+currentWind+"\nDuration: "+str(TripDuration)+"\nSpeed: "+str(TripSpeed)+" km/h"
                 UpdateTextSensor(vin,LASTTRIP,"Last Trip",LastTrip)
+            else:
+                Debug("Car did not move, ignoring")
     
     except KeyError as error:
         Debug("don't update triplog/last known location, not all devices are available yet: "+repr(error))
@@ -1196,7 +1202,7 @@ def UpdateDevices():
     GetEngineStatus() 
     GetEngine()
     GetWarnings()
-    if Devices[vin].Units[UNAVAILABLEREASON].sValue!="CAR_IN_USE":
+    if Devices[vin].Units[AVAILABILITYSTATUS].sValue=="AVAILABLE":
         UpdateLastKnownLocation()
     else:
         Debug("Car in use, don't try to update location")
