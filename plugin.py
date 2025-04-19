@@ -66,7 +66,7 @@ TIMEOUT=60 #timeout for API requests
 CLIMATIZATIONTIMEOUT=60 #can take longer when car is in deepsleep
 LOCKTIMEOUT=60 #can take longer when car is in deepsleep
 MINTIMEBETWEENLOGINATTEMPTS=600 #10 mins
-HOMECHARGINGRADIUS=0.025 # 25 meter (assume the car is using the home charger when with 25 meters)
+HOMECHARGINGRADIUS=0.050 # 50 meter (assume the car is using the home charger when with 25 meters)
 MINDIFFBETWEENCOORDS=0.025 # Only record new trip if new destination is further away than this distance from the previous location
 MAXUPDATEINTERVAL=24*3600 # Max number of seconds every sensor has to update when value has not changed, defaults to once per day
 TIMETOSETKWHMETERTOZERO=300 #Report 0 usage if no more updates
@@ -804,6 +804,7 @@ def GetRechargeStatus():
 
             #Update kwh counters
             DeltaPercentageBattery=int(float(RechargeStatus["data"]["batteryChargeLevel"]["value"])-float(Devices[vin].Units[BATTERYCHARGELEVEL].sValue))
+            Debug("Battery percentage = "+str(DeltaPercentageBattery))
 
             if DeltaPercentageBattery!=0 and Devices[vin].Units[CARHASMOVED].nValue==0:
                 Debug("SOC is changing while car is not moving, Updating battery percentage in last known location")
@@ -851,6 +852,7 @@ def GetRechargeStatus():
                 except KeyError:
                     Error("No Distance 2 home device, also not creating/updating athome/public charging kwh counters")
             else:
+                Debug("Delta Battery Percentage=0")
                 #reset powerlevel if batterlevel has not changed for  5 mins
                 #if TimeElapsedSinceLastUpdate(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate).total_seconds()>=TIMETOSETKWHMETERTOZERO or not (vin in Devices and USEDKWH in Devices[vin].Units in CHARGEDTOTAL not in Devices[vin].Units):
                 if TimeElapsedSinceLastUpdate(Devices[vin].Units[BATTERYCHARGELEVEL].LastUpdate).total_seconds()>=TIMETOSETKWHMETERTOZERO:
