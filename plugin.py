@@ -781,10 +781,11 @@ def GetRechargeStatus():
                      "{:.1f}".format(CalculatedRange))
 
         #update EstimatedEfficiency Device
-        estimatedEfficiency=(batteryPackSize*float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))  / float(RechargeStatus["data"]["electricRange"]["value"])
-        UpdateSensor(vin,ESTIMATEDEFFICIENCY,"estimatedEfficiency",243,31,{'Custom':'1;kWh/100km'},
-                     int(estimatedEfficiency),
-                     "{:.1f}".format(estimatedEfficiency))
+        if float(RechargeStatus["data"]["electricRange"]["value"])>0: 
+            estimatedEfficiency=(batteryPackSize*float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))  / float(RechargeStatus["data"]["electricRange"]["value"])
+            UpdateSensor(vin,ESTIMATEDEFFICIENCY,"estimatedEfficiency",243,31,{'Custom':'1;kWh/100km'},
+                         int(estimatedEfficiency),
+                         "{:.1f}".format(estimatedEfficiency))
 
 
         #update Remaining ChargingTime Device
