@@ -563,7 +563,7 @@ def UpdateLock(vin,idx,name,value):
         Error("Unable to update Lock ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
 def ReverseLock(vin,idx):
-    Debug("Reverslock() called")
+    Debug("ReverseLock() called")
     if (vin in Devices) and (idx in Devices[vin].Units):
         #Reverse the value
         if Devices[vin].Units[idx].nValue==1:
@@ -906,8 +906,7 @@ def DistanceBetweenCoords(coords1,coords2):
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
     distance = R * c
-
-    Debug=("Result: ", distance)
+    Debug("Result: " + str(distance))
     return distance
 
 def degToCompass(num):
