@@ -16,6 +16,12 @@ def Debug(text):
     if debug:
         print (text)
 
+def EnsureHTTPS(url):
+    if url.startswith("http://"):
+        url = "https://" + url[len("http://") :]
+        Debug("Url change to: "+str(url))
+    return url
+
 print("Starting VOC login with OTP")
 vccapikey=input("Enter your VOC API Key: ")
 username=input("Enter your VOC Username: ")
@@ -42,7 +48,7 @@ if auth.status_code == 200:
     Debug (json.dumps(response,indent=4))
 
     if response["status"]=="USERNAME_PASSWORD_REQUIRED":
-        url=response["_links"]["checkUsernamePassword"]["href"]+"?action=checkUsernamePassword"
+        url=EnsureHTTPS(response["_links"]["checkUsernamePassword"]["href"]+"?action=checkUsernamePassword")
         Debug (url)
         body={ "username":  username, "password": password }
         auth_session.headers.update({"x-xsrf-header": "PingFederate"})
@@ -53,7 +59,7 @@ if auth.status_code == 200:
             if response["status"]=="OTP_REQUIRED":
                 print("OTP sent to "+str(response["devices"][0]["type"])+"("+str(response["devices"][0]["target"])+")")
                 otp=input("Enter your OTP: ")
-                url=response["_links"]["checkOtp"]["href"] + "?action=checkOtp"
+                url=EnsureHTTPS(response["_links"]["checkOtp"]["href"] + "?action=checkOtp")
                 Debug("url="+str(url))
                 auth=auth_session.post(url,data=json.dumps({ "otp": otp }))
                 Debug(json.dumps(auth.json(),indent=4))
@@ -61,7 +67,7 @@ if auth.status_code == 200:
                       response=auth.json()
                       if response["status"]=="OTP_VERIFIED":
                             Debug("OTP succesful, continuing auth")
-                            url=response["_links"]["continueAuthentication"]["href"] + "?action=continueAuthentication"
+                            url=EnsureHTTPS(response["_links"]["continueAuthentication"]["href"] + "?action=continueAuthentication")
                             auth=auth_session.get(url)
                             response=auth.json()
                             Debug(json.dumps(response,indent=4))
