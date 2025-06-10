@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Script for volvo plugin to generate .ini file with token using 2FA
 import getpass
 import time
