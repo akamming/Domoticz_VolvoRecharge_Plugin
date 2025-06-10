@@ -287,7 +287,7 @@ def CheckRefreshToken():
             if refresh_token:
                 GetVin()
             else:
-                Error("Unable to login to Volvo, check your authorisation settings")
+                Error("Unable to login to Volvo, run authorize.py to re-establish connection")
         else:
             Debug("Not logged in, retrying in "+str(MINTIMEBETWEENLOGINATTEMPTS-(time.time()-lastloginattempttimestamp))+" seconds")
 
