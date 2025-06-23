@@ -816,14 +816,14 @@ def GetRechargeStatus():
         # Determine EVCC connected status (A-F)
         if RechargeStatus["data"]["chargingConnectionStatus"]["value"]=="CONNECTION_STATUS_DISCONNECTED":
             UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "A")
-        elif RechargeStatus["data"]["chargingConnectionStatus"]["value"]=="CONNECTION_STATUS_CONNECTED":
+        elif RechargeStatus["data"]["chargingConnectionStatus"]["value"].startswith("CONNECTION_STATUS_CONNECTED"):
             if RechargeStatus["data"]["chargingSystemStatus"]["value"]=="CHARGING_SYSTEM_IDLE" or RechargeStatus["data"]["chargingSystemStatus"]["value"]=="CHARGING_SYSTEM_DONE":
                 UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "B")
             elif RechargeStatus["data"]["chargingSystemStatus"]["value"]=="CHARGING_SYSTEM_CHARGING":
                 UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "C")
             else:
                 UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "E")
-                
+
         #check if we have an existing batterypercentage
         if (vin in Devices) and (BATTERYCHARGELEVEL in Devices[vin].Units):
             Debug("We have previous batterychargelevelupdates, so we can caculate the diffence")
