@@ -174,6 +174,7 @@ CURRENTLOCATION=81
 UPDATENOW=82
 OUTSIDEWIND=83
 CARHASMOVED=84
+EVCCCONNECTEDSTATUS=85
 
 def Debug(text):
     if debugging:
@@ -251,9 +252,17 @@ def RefreshVOCToken():
             Debug("Volvo responded: "+str(response.json()))
 
             #retrieve tokens
-            access_token = response.json()['access_token']
-            refresh_token = response.json()['refresh_token']
-            expirytimestamp=time.time()+response.json()['expires_in']
+            resp_json = response.json()
+            access_token = resp_json.get('access_token')
+            refresh_token = resp_json.get('refresh_token')
+            if access_token and refresh_token:
+                Debug("Access token: "+access_token)
+                Debug("Refresh token: "+refresh_token)
+                expirytimestamp = time.time() + resp_json.get('expires_in')
+            else:
+                Error("Unable to retrieve access or refresh token from Volvo response")
+                access_token=None
+                refresh_token=None        
 
             #save tokens in case of restarts
             WriteTokenToIniFile()
@@ -310,20 +319,25 @@ def VolvoAPI(url,mediatype):
         Debug(status)
         Debug("Result took "+str(endtime-starttime))
 
-        if status.status_code!=200:
+        try:
+            resp_json = status.json()
+        except Exception as json_error:
+            Error("Response from "+url+" is not valid JSON: "+str(json_error))
+            Error("Raw response: "+status.text)
+            return None
+
+        if status.status_code != 200:
             Error("VolvoAPI failed calling "+url+", HTTP Statuscode "+str(status.status_code))
-            Error("Reponse: "+str(status.json()))
+            Error("Response: "+json.dumps(resp_json, indent=4))
             return None
         else:
-            sjson=status.json()
-            sjson = json.dumps(status.json(), indent=4)
             Debug("\nResult JSON:")
-            Debug(sjson)
-            return status.json()
+            Debug(json.dumps(resp_json, indent=4))
+            return resp_json
 
     except Exception as error:
         Error("VolvoAPI failed calling "+url+" with mediatype "+mediatype+" failed")
-        Error(error)
+        Error(str(error))
         return None
 
 def CheckVehicleDetails():
@@ -799,6 +813,17 @@ def GetRechargeStatus():
         #Calculate Charging system Status value
         UpdateTextSensor(vin,CHARGINGSYSTEMSTATUS,"chargingSystemStatus", RechargeStatus["data"]["chargingSystemStatus"]["value"])
 
+        # Determine EVCC connected status (A-F)
+        if RechargeStatus["data"]["chargingConnectionStatus"]["value"]=="CONNECTION_STATUS_DISCONNECTED":
+            UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "A")
+        elif RechargeStatus["data"]["chargingConnectionStatus"]["value"]=="CONNECTION_STATUS_CONNECTED":
+            if RechargeStatus["data"]["chargingSystemStatus"]["value"]=="CHARGING_SYSTEM_IDLE" or RechargeStatus["data"]["chargingSystemStatus"]["value"]=="CHARGING_SYSTEM_DONE":
+                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "B")
+            elif RechargeStatus["data"]["chargingSystemStatus"]["value"]=="CHARGING_SYSTEM_CHARGING":
+                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "C")
+            else:
+                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "E")
+                
         #check if we have an existing batterypercentage
         if (vin in Devices) and (BATTERYCHARGELEVEL in Devices[vin].Units):
             Debug("We have previous batterychargelevelupdates, so we can caculate the diffence")
@@ -1393,7 +1418,7 @@ class BasePlugin:
     def onStart(self):
         global google_api_key,vccapikey,debugging,info,lastupdate,updateinterval,expirytimestamp,abrp_api_key,abrp_token,openweather_token
         Debug("OnStart called")
-        
+
         #read params
         if Parameters["Mode6"] in {"-1","126"}:
             Domoticz.Debugging(int(Parameters["Mode6"]))
