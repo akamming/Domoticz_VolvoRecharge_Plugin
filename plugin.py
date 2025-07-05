@@ -254,7 +254,12 @@ def RefreshVOCToken():
             #retrieve tokens
             resp_json = response.json()
             access_token = resp_json.get('access_token')
-            refresh_token = resp_json.get('refresh_token')
+            if resp_json.get('refresh_token'):
+                Debug("refresh token exists")
+                refresh_token = resp_json.get('refresh_token')
+            else:
+                Debug("No refresh_token")
+
             if access_token and refresh_token:
                 Debug("Access token: "+access_token)
                 Debug("Refresh token: "+refresh_token)
