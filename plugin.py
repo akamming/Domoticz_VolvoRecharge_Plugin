@@ -778,68 +778,109 @@ def GetCommandAccessabilityStatus():
     else:
         Error("Updating Command Accessability failed")
 
+def GetRechargeSensorValue(json, sensorName):
+    """
+    Safely retrieves the value from data[sensorName]["value"].
+    If any part of the path is missing or invalid, returns None.
+    
+    Parameters:
+        data (dict): The dictionary containing sensor data (e.g., RechargeStatus["data"]).
+        sensorName (str): The name of the sensor to retrieve.
+
+    Returns:
+        The value of data[sensorName]["value"], or None if not available.
+    """
+    data=json.get(sensorName)
+    if data is None:
+        Debug(sensorName+" not present in json")
+        return None
+    else:
+        value=data.get("value")
+        if value is None:
+            Debug("Value field not present for "+sensorName)
+        else:
+            return value
+
 def GetRechargeStatus():
     global batteryPackSize
     global ACCharging
 
     Debug("GetRechargeStatus() called")
-    RechargeStatus=VolvoAPI("https://api.volvocars.com/energy/v1/vehicles/"+vin+"/recharge-status","application/vnd.volvocars.api.energy.vehicledata.v1+json")
+    #RechargeStatus=VolvoAPI(f"https://api.volvocars.com/energy/v1/vehicles/{vin}/recharge-status","application/vnd.volvocars.api.energy.vehicledata.v1+json")
+    RechargeStatus=VolvoAPI(f"https://api.volvocars.com/energy/v2/vehicles/{vin}/state","application/json")
     if RechargeStatus:
         Debug(json.dumps(RechargeStatus))
 
-        #update Remaining Range Device
-        UpdateSensor(vin,REMAININGRANGE,"electricRange",243,31,{'Custom':'1;km'},
-                     int(RechargeStatus["data"]["electricRange"]["value"]),
-                     float(RechargeStatus["data"]["electricRange"]["value"]))
+        #Get values from json in safe way
+        electricRange=GetRechargeSensorValue(RechargeStatus,"electricRange")
+        batteryChargeLevel=GetRechargeSensorValue(RechargeStatus,"batteryChargeLevel")
+        chargerConnectionStatus=GetRechargeSensorValue(RechargeStatus,"chargerConnectionStatus")
+        chargingStatus=GetRechargeSensorValue(RechargeStatus,"chargingStatus")
+        chargingType=GetRechargeSensorValue(RechargeStatus,"chargingType")
+        chargerPowerStatus=GetRechargeSensorValue(RechargeStatus,"chargerPowerStatus")
+        estimatedChargingTimeToTargetBatteryChargeLevel=GetRechargeSensorValue(RechargeStatus,"estimatedChargingTimeToTargetBatteryChargeLevel")
+        chargingCurrentLimit=GetRechargeSensorValue(RechargeStatus,"chargingCurrentLimit")
+        targetBatteryChargeLevel=GetRechargeSensorValue(RechargeStatus,"targetBatteryChargeLevel")
+        chargingPower=GetRechargeSensorValue(RechargeStatus,"chargingPower")
+
+        if electricRange is not None:
+            #update Remaining Range Device
+            Debug("Update Electric Range")
+            UpdateSensor(vin,REMAININGRANGE,"electricRange",243,31,{'Custom':'1;km'},int(electricRange),float(electricRange))
+
+            if batteryChargeLevel is not None:
+                #update Fullrange Device
+                CalculatedRange=float(electricRange) * 100 / float(batteryChargeLevel)
+                UpdateSensor(vin,FULLRANGE,"fullRange",243,31,{'Custom':'1;km'},
+                             int(CalculatedRange),
+                             "{:.1f}".format(CalculatedRange))
+
+            #update EstimatedEfficiency Device
+            if float(electricRange>0): 
+                estimatedEfficiency=batteryPackSize*float(batteryChargeLevel)  / float(electricRange)
+                UpdateSensor(vin,ESTIMATEDEFFICIENCY,"estimatedEfficiency",243,31,{'Custom':'1;kWh/100km'},
+                             int(estimatedEfficiency),
+                             "{:.1f}".format(estimatedEfficiency))
+            else:
+                Debug("Vehicle not reporting batterychargelevel")
+        else:
+            Debug("Vehicle not reporting electricRange")
 
 
-        #update Fullrange Device
-        CalculatedRange=float(RechargeStatus["data"]["electricRange"]["value"]) * 100 / float(RechargeStatus["data"]["batteryChargeLevel"]["value"])
-        UpdateSensor(vin,FULLRANGE,"fullRange",243,31,{'Custom':'1;km'},
-                     int(CalculatedRange),
-                     "{:.1f}".format(CalculatedRange))
 
-        #update EstimatedEfficiency Device
-        if float(RechargeStatus["data"]["electricRange"]["value"])>0: 
-            estimatedEfficiency=(batteryPackSize*float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))  / float(RechargeStatus["data"]["electricRange"]["value"])
-            UpdateSensor(vin,ESTIMATEDEFFICIENCY,"estimatedEfficiency",243,31,{'Custom':'1;kWh/100km'},
-                         int(estimatedEfficiency),
-                         "{:.1f}".format(estimatedEfficiency))
 
 
         #update Remaining ChargingTime Device
-        UpdateSensor(vin,ESTIMATEDCHARGINGTIME,"estimatedChargingTime",243,31,{'Custom':'1;min'},
-                     int(RechargeStatus["data"]["estimatedChargingTime"]["value"]),
-                     float(RechargeStatus["data"]["estimatedChargingTime"]["value"]))
+        UpdateSensor(vin,ESTIMATEDCHARGINGTIME,"estimatedChargingTime",243,31,{'Custom':'1;min'},int(estimatedChargingTimeToTargetBatteryChargeLevel),float(estimatedChargingTimeToTargetBatteryChargeLevel))
 
         #Calculate Charging Connect Status value
-        UpdateTextSensor(vin,CHARGINGCONNECTIONSTATUS,"chargingConnectionStatus", RechargeStatus["data"]["chargingConnectionStatus"]["value"])
+        UpdateTextSensor(vin,CHARGINGCONNECTIONSTATUS,"chargingConnectionStatus", chargerConnectionStatus)
 
         #Calculate Charging system Status value
-        UpdateTextSensor(vin,CHARGINGSYSTEMSTATUS,"chargingSystemStatus", RechargeStatus["data"]["chargingSystemStatus"]["value"])
+        UpdateTextSensor(vin,CHARGINGSYSTEMSTATUS,"chargingSystemStatus", chargingStatus)
 
         # Determine EVCC connected status (A-F)
-        if RechargeStatus["data"]["chargingConnectionStatus"]["value"]=="CONNECTION_STATUS_DISCONNECTED":
+        if chargerConnectionStatus=="DISCONNECTED":
             UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "A")
-        elif RechargeStatus["data"]["chargingConnectionStatus"]["value"].startswith("CONNECTION_STATUS_CONNECTED"):
-            if RechargeStatus["data"]["chargingSystemStatus"]["value"]=="CHARGING_SYSTEM_IDLE" or RechargeStatus["data"]["chargingSystemStatus"]["value"]=="CHARGING_SYSTEM_DONE":
-                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "B")
-            elif RechargeStatus["data"]["chargingSystemStatus"]["value"]=="CHARGING_SYSTEM_CHARGING":
+        elif chargerConnectionStatus=="CONNECTED":
+            if chargingStatus=="ERROR":
+                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "E")
+            elif chargingStatus=="CHARGING":
                 UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "C")
             else:
-                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "E")
+                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "B")
 
         #check if we have an existing batterypercentage
         if (vin in Devices) and (BATTERYCHARGELEVEL in Devices[vin].Units):
             Debug("We have previous batterychargelevelupdates, so we can caculate the diffence")
 
             #Update kwh counters
-            DeltaPercentageBattery=int(float(RechargeStatus["data"]["batteryChargeLevel"]["value"])-float(Devices[vin].Units[BATTERYCHARGELEVEL].sValue))
+            DeltaPercentageBattery=int(float(batteryChargeLevel)-float(Devices[vin].Units[BATTERYCHARGELEVEL].sValue))
             Debug("Battery percentage = "+str(DeltaPercentageBattery))
 
             if DeltaPercentageBattery!=0 and Devices[vin].Units[CARHASMOVED].nValue==0:
                 Debug("SOC is changing while car is not moving, Updating battery percentage in last known location")
-                UpdateBatteryChargeLevelInLastKnownLocation(float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))
+                UpdateBatteryChargeLevelInLastKnownLocation(float(batteryChargeLevel))
             else:
                 Debug("No need to update SOC in last known location")
             
@@ -914,9 +955,7 @@ def GetRechargeStatus():
 
         
         #update Percentage Device
-        UpdateSensor(vin,BATTERYCHARGELEVEL,"batteryChargeLevel",243,6,None,
-                     float(RechargeStatus["data"]["batteryChargeLevel"]["value"]),
-                     float(RechargeStatus["data"]["batteryChargeLevel"]["value"]))
+        UpdateSensor(vin,BATTERYCHARGELEVEL,"batteryChargeLevel",243,6,None,int(batteryChargeLevel),float(batteryChargeLevel))
     else:
         Error("Updating Recharge Status failed")
 
