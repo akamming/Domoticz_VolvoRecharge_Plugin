@@ -852,7 +852,15 @@ def GetRechargeStatus():
         else:
             Debug("Vehicle not reporting electricRange")
 
+        UpdateTextSensor(vin,CHARGINGTYPE,"chargingType",chargingType)
+        UpdateTextSensor(vin,CHARGERPOWERSTATUS,"chargerPowerStatus",chargerPowerStatus)
 
+        UpdateSensor(vin,CHARGINGCURRENTLIMIT,"chargingCurrentLimit",243,23,None,int(chargingCurrentLimit),float(chargingCurrentLimit))
+        UpdateSensor(vin,TARGETBATTERYLEVEL,"targetBatteryChargeLevel",243,6,None,int(targetBatteryChargeLevel),float(targetBatteryChargeLevel))
+        if chargingPower is None:
+            UpdateSensor(vin,CHARGINGPOWER,"chargingPower",248,1,None,0,"0.0")
+        else:
+            UpdateSensor(vin,CHARGINGPOWER,"chargingPower",248,1,None,int(chargingpower),float(chargingPower))
 
 
 
