@@ -175,6 +175,12 @@ UPDATENOW=82
 OUTSIDEWIND=83
 CARHASMOVED=84
 EVCCCONNECTEDSTATUS=85
+CHARGINGTYPE=86
+CHARGERPOWERSTATUS=87
+CHARGINGCURRENTLIMIT=88
+TARGETBATTERYLEVEL=89
+CHARGINGPOWER=90
+
 
 def Debug(text):
     if debugging:
@@ -906,15 +912,8 @@ def GetRechargeStatus():
                         Debug("Public Charging")
                         IncreaseKWHMeter(vin,CHARGEDPUBLIC,"chargedPublic",DeltaPercentageBattery)
                         IncreaseKWHMeter(vin,CHARGEDATHOME,"chargedAtHome",0)
-                        #Check which kind of charing
-                        if Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==10:
-                            ACCharging=True
-                        elif Devices[vin].Units[CHARGINGCONNECTIONSTATUS].nValue==20:
-                            ACCharging=False
-                        else:
-                            Debug("Unknown charging type")
 
-                        if ACCharging:
+                        if chargingType=="AC":
                             IncreaseKWHMeter(vin,CHARGEDPUBLICAC, "chargedPublicAC", DeltaPercentageBattery)
                             IncreaseKWHMeter(vin,CHARGEDPUBLICDC, "chargedPublicDC", 0)
                         else:
