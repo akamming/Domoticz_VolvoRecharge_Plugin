@@ -852,11 +852,26 @@ def GetRechargeStatus():
         else:
             Debug("Vehicle not reporting electricRange")
 
-        UpdateTextSensor(vin,CHARGINGTYPE,"chargingType",chargingType)
-        UpdateTextSensor(vin,CHARGERPOWERSTATUS,"chargerPowerStatus",chargerPowerStatus)
+        if chargingType is None:
+            Debug("chargingType not supported")
+        else:
+            UpdateTextSensor(vin,CHARGINGTYPE,"chargingType",chargingType)
 
-        UpdateSensor(vin,CHARGINGCURRENTLIMIT,"chargingCurrentLimit",243,23,None,int(chargingCurrentLimit),float(chargingCurrentLimit))
-        UpdateSensor(vin,TARGETBATTERYLEVEL,"targetBatteryChargeLevel",243,6,None,int(targetBatteryChargeLevel),float(targetBatteryChargeLevel))
+        if chargerPowerStatus is None:
+            Debug("chargerPowerStatus not supported")
+        else:
+            UpdateTextSensor(vin,CHARGERPOWERSTATUS,"chargerPowerStatus",chargerPowerStatus)
+
+        if chargingCurrentLimit is None:
+            Debug("chargingCurrentLimit is not supported")
+        else:
+            UpdateSensor(vin,CHARGINGCURRENTLIMIT,"chargingCurrentLimit",243,23,None,int(chargingCurrentLimit),float(chargingCurrentLimit))
+
+        if targetBatteryChargeLevel is None:
+            Debug("targetBatteryChargeLevel is not supported")
+        else:
+            UpdateSensor(vin,TARGETBATTERYLEVEL,"targetBatteryChargeLevel",243,6,None,int(targetBatteryChargeLevel),float(targetBatteryChargeLevel))
+
         if chargingPower is None:
             UpdateSensor(vin,CHARGINGPOWER,"chargingPower",248,1,None,0,"0.0")
         else:
@@ -865,24 +880,36 @@ def GetRechargeStatus():
 
 
         #update Remaining ChargingTime Device
-        UpdateSensor(vin,ESTIMATEDCHARGINGTIME,"estimatedChargingTime",243,31,{'Custom':'1;min'},int(estimatedChargingTimeToTargetBatteryChargeLevel),float(estimatedChargingTimeToTargetBatteryChargeLevel))
+        if estimatedChargingTimeToTargetBatteryChargeLevel is None:
+            Debug("estimatedChargingTimeToTargetBatteryLevel is not supported")
+        else:
+            UpdateSensor(vin,ESTIMATEDCHARGINGTIME,"estimatedChargingTime",243,31,{'Custom':'1;min'},int(estimatedChargingTimeToTargetBatteryChargeLevel),float(estimatedChargingTimeToTargetBatteryChargeLevel))
 
         #Calculate Charging Connect Status value
-        UpdateTextSensor(vin,CHARGINGCONNECTIONSTATUS,"chargingConnectionStatus", chargerConnectionStatus)
+        if chargerConnectionStatus is None:
+            Debug("chargingConnectionStatus is not supported")
+        else:
+            UpdateTextSensor(vin,CHARGINGCONNECTIONSTATUS,"chargingConnectionStatus", chargerConnectionStatus)
 
         #Calculate Charging system Status value
-        UpdateTextSensor(vin,CHARGINGSYSTEMSTATUS,"chargingSystemStatus", chargingStatus)
+        if chargingStatus is None:
+            Debug("chargingSystemStatus is not supported")
+        else:
+            UpdateTextSensor(vin,CHARGINGSYSTEMSTATUS,"chargingSystemStatus", chargingStatus)
 
         # Determine EVCC connected status (A-F)
-        if chargerConnectionStatus=="DISCONNECTED":
-            UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "A")
-        elif chargerConnectionStatus=="CONNECTED":
-            if chargingStatus=="ERROR":
-                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "E")
-            elif chargingStatus=="CHARGING":
-                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "C")
-            else:
-                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "B")
+        if chargerConnectionStatus is None:
+            Debug("ChargerConnectionStatus is not supported")
+        else:
+            if chargerConnectionStatus=="DISCONNECTED":
+                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "A")
+            elif chargerConnectionStatus=="CONNECTED":
+                if chargingStatus=="ERROR":
+                    UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "E")
+                elif chargingStatus=="CHARGING":
+                    UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "C")
+                else:
+                    UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "B")
 
         #check if we have an existing batterypercentage
         if (vin in Devices) and (BATTERYCHARGELEVEL in Devices[vin].Units):
