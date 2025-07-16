@@ -631,8 +631,8 @@ def GetOdoMeter():
         UpdateOdoMeter(vin,ODOMETER,"Odometer",value)
 
 
-def GetDoorWindowAndLockStatus():
-    Debug("GetDoorAndLockStatus() Called")
+def GetWindowStatus():
+    Debug("GetWindowstatus() Called")
     
     windows=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/windows","application/json")
     if windows:
@@ -645,6 +645,7 @@ def GetDoorWindowAndLockStatus():
     else:
         Error("Updating Windows failed")
 
+def GetDoorAndLockStatus():
     doors=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/doors","application/json")
     if doors:
         Debug(json.dumps(doors))
@@ -1298,7 +1299,8 @@ def UpdateDevices():
     GetOdoMeter() #Odometer must be known before GetRechargeStatus to detect if car has moved
     GetLocation() #Location must be known before GetRechargeStatus te detect local charging and to detect if carhasmoved
     updateCarHasMoved() #Check if the carhasmoved
-    GetDoorWindowAndLockStatus() #also check for open windows while driving
+    GetDoorAndLockStatus() 
+    GetWindowStatus() 
     if batteryPackSize:
         GetRechargeStatus()
     else:
@@ -1308,6 +1310,8 @@ def UpdateDevices():
     GetEngineStatus() 
     GetEngine()
     GetWarnings()
+
+    # update calculated sensors
     if Devices[vin].Units[AVAILABILITYSTATUS].sValue=="AVAILABLE":
         UpdateLastKnownLocation()
     else:
