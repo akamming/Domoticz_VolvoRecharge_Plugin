@@ -310,7 +310,7 @@ def CheckRefreshToken():
                 GetVin()
             else:
                 Error("Unable to login to Volvo, run authorize.py to re-establish connection")
-                UpdateTextSensor(vin,APISTATUS,APISTATUSNAME,"Disconnected, run authorize.py to (re)establish connection")
+                UpdateTextSensor(Parameters["Name"],APISTATUS,APISTATUSNAME,"Disconnected, run authorize.py to (re)establish connection")
         else:
             Debug("Not logged in, retrying in "+str(MINTIMEBETWEENLOGINATTEMPTS-(time.time()-lastloginattempttimestamp))+" seconds")
 
@@ -352,7 +352,7 @@ def VolvoAPI(url,mediatype):
         else:
             Debug("\nResult JSON:")
             Debug(json.dumps(resp_json, indent=4))
-            UpdateTextSensor(vin,APISTATUS,APISTATUSNAME,"Connected")
+            UpdateTextSensor(Parameters["Name"],APISTATUS,APISTATUSNAME,"Connected")
             return resp_json
 
     except Exception as error:
