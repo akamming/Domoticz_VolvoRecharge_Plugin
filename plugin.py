@@ -70,6 +70,7 @@ HOMECHARGINGRADIUS=0.050 # 50 meter (assume the car is using the home charger wh
 MINDIFFBETWEENCOORDS=0.025 # Only record new trip if new destination is further away than this distance from the previous location
 MAXUPDATEINTERVAL=24*3600 # Max number of seconds every sensor has to update when value has not changed, defaults to once per day
 TIMETOSETKWHMETERTOZERO=300 #Report 0 usage if no more updates
+APISTATUSNAME="API Status" #Default devicename of APIStatus device
 
 #global vars
 abrp_api_key=None
@@ -180,6 +181,7 @@ CHARGERPOWERSTATUS=87
 CHARGINGCURRENTLIMIT=88
 TARGETBATTERYLEVEL=89
 CHARGINGPOWER=90
+APISTATUS=91
 
 
 def Debug(text):
@@ -308,10 +310,13 @@ def CheckRefreshToken():
                 GetVin()
             else:
                 Error("Unable to login to Volvo, run authorize.py to re-establish connection")
+                UpdateTextSensor(vin,APISTATUS,APISTATUSNAME,"Disconnected, run authorize.py to (re)establish connection")
         else:
             Debug("Not logged in, retrying in "+str(MINTIMEBETWEENLOGINATTEMPTS-(time.time()-lastloginattempttimestamp))+" seconds")
 
 def VolvoAPI(url,mediatype):
+    global vin
+
     Debug("VolvoAPI("+url+","+mediatype+") called")
     try:
         starttime=datetime.datetime.now()
@@ -334,19 +339,25 @@ def VolvoAPI(url,mediatype):
             resp_json = status.json()
         except Exception as json_error:
             Error("Response from "+url+" is not valid JSON: "+str(json_error))
-            Error("Raw response: "+status.text)
+            output=status.text
+            Error("Raw response: "+output)
+            UpdateTextSensor(Parameters["Name"],APISTATUS,APISTATUSNAME,f"API Error: {output}")
             return None
 
         if status.status_code != 200:
             Error("VolvoAPI failed calling "+url+", HTTP Statuscode "+str(status.status_code))
             Error("Response: "+json.dumps(resp_json, indent=4))
-            return None
+            output=status.text
+            UpdateTextSensor(Parameters["Name"],APISTATUS,APISTATUSNAME,f"API Error: {output}")
         else:
             Debug("\nResult JSON:")
             Debug(json.dumps(resp_json, indent=4))
+            UpdateTextSensor(vin,APISTATUS,APISTATUSNAME,"Connected")
             return resp_json
 
     except Exception as error:
+        output=status.text
+        UpdateTextSensor(Parameters["Name"],APISTATUS,APISTATUSNAME,f"API Error: {output}")
         Error("VolvoAPI failed calling "+url+" with mediatype "+mediatype+" failed")
         Error(str(error))
         return None
@@ -474,18 +485,19 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
         Error("Unable to update KWH device ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
 def UpdateTextSensor(vn,idx,name,text):
+    Error(f"UpdateTextSensor({vn},{idx},{name},{text})")
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=243, Subtype=19, DeviceID=vn, Used=False).Create()
 
     try:
-        if text!=Devices[vin].Units[idx].sValue or TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()>MAXUPDATEINTERVAL :
-            Devices[vin].Units[idx].sValue=text 
-            Devices[vin].Units[idx].Type=243
-            Devices[vin].Units[idx].SubType=19
-            Devices[vin].Units[idx].Update(Log=True)
-            Domoticz.Log("TextSensor ("+Devices[vin].Units[idx].Name+")")
+        if text!=Devices[vn].Units[idx].sValue or TimeElapsedSinceLastUpdate(Devices[vn].Units[idx].LastUpdate).total_seconds()>MAXUPDATEINTERVAL :
+            Devices[vn].Units[idx].sValue=text 
+            Devices[vn].Units[idx].Type=243
+            Devices[vn].Units[idx].SubType=19
+            Devices[vn].Units[idx].Update(Log=True)
+            Domoticz.Log("TextSensor ("+Devices[vn].Units[idx].Name+")")
         else:
-            Debug("Not updating TextSensor ("+Devices[vin].Units[idx].Name+")")
+            Debug("Not updating TextSensor ("+Devices[vn].Units[idx].Name+")")
     except KeyError:
         Error("Unable to update Text Sensor ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
@@ -494,13 +506,13 @@ def UpdateSelectorSwitch(vn,idx,name,options,nv,sv):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, TypeName="Selector Switch", DeviceID=vn, Options=options, Used=False).Create()
 
     try:
-        if nv!=Devices[vin].Units[idx].nValue or TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()>MAXUPDATEINTERVAL :
-            Devices[vin].Units[idx].nValue = int(nv)
-            Devices[vin].Units[idx].sValue = sv
-            Devices[vin].Units[idx].Update(Log=True)
-            Domoticz.Log("Selector Switch ("+Devices[vin].Units[idx].Name+")")
+        if nv!=Devices[vn].Units[idx].nValue or TimeElapsedSinceLastUpdate(Devices[vn].Units[idx].LastUpdate).total_seconds()>MAXUPDATEINTERVAL :
+            Devices[vn].Units[idx].nValue = int(nv)
+            Devices[vn].Units[idx].sValue = sv
+            Devices[vn].Units[idx].Update(Log=True)
+            Domoticz.Log("Selector Switch ("+Devices[vn].Units[idx].Name+")")
         else:
-            Debug("Not Updating Selector Switch ("+Devices[vin].Units[idx].Name+")")
+            Debug("Not Updating Selector Switch ("+Devices[vn].Units[idx].Name+")")
     except KeyError:
         Error("Unable to update Selector device ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
