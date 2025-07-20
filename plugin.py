@@ -968,7 +968,7 @@ def GetRechargeStatus():
         if chargingPower is None:
             UpdateSensor(vin,CHARGINGPOWER,"chargingPower",248,1,None,0,"0.0")
         else:
-            UpdateSensor(vin,CHARGINGPOWER,"chargingPower",248,1,None,int(chargingpower),float(chargingPower))
+            UpdateSensor(vin,CHARGINGPOWER,"chargingPower",248,1,None,int(chargingPower),float(chargingPower))
 
 
 
