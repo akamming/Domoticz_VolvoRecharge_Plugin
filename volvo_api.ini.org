@@ -1,0 +1,46 @@
+[API]
+vccapikey = 0f2c2f2db2ea4d76838f9c85723d82e7
+
+[CAR]
+vin = YV1XZEFVKN2722937
+
+[ENDPOINTS]
+Available Commands = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/commands
+Command Accessibility = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/command-accessibility
+Diagnostics = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/diagnostics
+Door Status = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/doors
+Engine (extra) = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/engine
+Engine Status = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/engine-status
+Get Vehicle Info = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}
+List Vehicles = https://api.volvocars.com/connected-vehicle/v2/vehicles
+Lock Vehicle = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/commands/lock
+Odometer = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/odometer
+Recharge Status (energy v2) = https://api.volvocars.com/energy/v2/vehicles/{vin}/state
+Start Climatization = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/commands/climatization-start
+Stop Climatization = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/commands/climatization-stop
+Tyre Status = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/tyres
+Unlock Vehicle = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/commands/unlock
+Vehicle Location = https://api.volvocars.com/location/v1/vehicles/{vin}/location
+Warning Status = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/warnings
+Window Status = https://api.volvocars.com/connected-vehicle/v2/vehicles/{vin}/windows
+
+[HTTP_METHODS]
+Available Commands = GET
+Command Accessibility = GET
+Diagnostics = GET
+Door Status = GET
+Engine (extra) = GET
+Engine Status = GET
+Get Vehicle Info = GET
+List Vehicles = GET
+Lock Vehicle = POST
+Odometer = GET
+Recharge Status (energy v2) = GET
+Start Climatization = POST
+Stop Climatization = POST
+Tyre Status = GET
+Unlock Vehicle = POST
+Vehicle Location = GET
+Warning Status = GET
+Window Status = GET
+
