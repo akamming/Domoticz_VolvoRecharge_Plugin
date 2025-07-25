@@ -485,7 +485,7 @@ def IncreaseKWHMeter(vn,idx,name,percentage):
         Error("Unable to update KWH device ("+name+"), is the  \"accept new devices\" toggle switched  on in your config?")
 
 def UpdateTextSensor(vn,idx,name,text):
-    Error(f"UpdateTextSensor({vn},{idx},{name},{text})")
+    Debug(f"UpdateTextSensor({vn},{idx},{name},{text})")
     if (not vn in Devices) or (not idx in Devices[vn].Units):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=243, Subtype=19, DeviceID=vn, Used=False).Create()
 
@@ -997,12 +997,15 @@ def GetRechargeStatus():
             if chargerConnectionStatus=="DISCONNECTED":
                 UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "A")
             elif chargerConnectionStatus=="CONNECTED":
-                if chargingStatus=="ERROR":
-                    UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "E")
-                elif chargingStatus=="CHARGING":
+                if chargingStatus=="CHARGING":
                     UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "C")
                 else:
                     UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "B")
+            elif chargerConnectionStatus=="FAULT":
+                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "D")
+            else:
+                Error("ChargerConnectionStatus not supported, setting EVCCConnectedStatus to E")
+                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "E")
 
     else:
         Error("Updating Recharge Status failed")
