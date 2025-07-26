@@ -634,26 +634,32 @@ def UpdateOdoMeter(vn,idx,name,value):
 
 def GetOdoMeter():
     Debug("GetOdoMeter() Called")
-    
-    odometer=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/odometer","application/json")
+    odometer = VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + "/odometer", "application/json")
     if odometer:
         Debug(json.dumps(odometer))
-        value=int(odometer["data"]["odometer"]["value"])
-        Debug("odometer="+str(value))
-        UpdateOdoMeter(vin,ODOMETER,"Odometer",value)
-
+        value = odometer.get("data", {}).get("odometer", {}).get("value")
+        if value is not None:
+            Debug("odometer=" + str(value))
+            try:
+                UpdateOdoMeter(vin, ODOMETER, "Odometer", int(value))
+            except (TypeError, ValueError):
+                Error("Odometer value is not a valid integer: " + str(value))
+        else:
+            Error("Odometer value missing in response")
+    else:
+        Error("Getting Odometer data failed")
 
 def GetWindowStatus():
     Debug("GetWindowstatus() Called")
-    
     windows=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/windows","application/json")
     if windows:
         Debug(json.dumps(windows))
-        UpdateDoorOrWindow(vin,FRONTLEFTWINDOW,"FrontLeftWindow",windows["data"]["frontLeftWindow"]["value"])
-        UpdateDoorOrWindow(vin,FRONTRIGHTWINDOW,"FrontRightWindow",windows["data"]["frontRightWindow"]["value"])
-        UpdateDoorOrWindow(vin,REARLEFTWINDOW,"RearLeftWindow",windows["data"]["rearLeftWindow"]["value"])
-        UpdateDoorOrWindow(vin,REARRIGHTWINDOW,"RearRightWindow",windows["data"]["rearRightWindow"]["value"])
-        UpdateDoorOrWindow(vin,SUNROOF,"SunRoof",windows["data"]["sunroof"]["value"])
+        data = windows.get("data", {})
+        UpdateDoorOrWindow(vin,FRONTLEFTWINDOW,"FrontLeftWindow", data.get("frontLeftWindow", {}).get("value", "UNKNOWN"))
+        UpdateDoorOrWindow(vin,FRONTRIGHTWINDOW,"FrontRightWindow", data.get("frontRightWindow", {}).get("value", "UNKNOWN"))
+        UpdateDoorOrWindow(vin,REARLEFTWINDOW,"RearLeftWindow", data.get("rearLeftWindow", {}).get("value", "UNKNOWN"))
+        UpdateDoorOrWindow(vin,REARRIGHTWINDOW,"RearRightWindow", data.get("rearRightWindow", {}).get("value", "UNKNOWN"))
+        UpdateDoorOrWindow(vin,SUNROOF,"SunRoof", data.get("sunroof", {}).get("value", "UNKNOWN"))
     else:
         Error("Updating Windows failed")
 
@@ -661,14 +667,15 @@ def GetDoorAndLockStatus():
     doors=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/doors","application/json")
     if doors:
         Debug(json.dumps(doors))
-        UpdateDoorOrWindow(vin,HOOD,"Hood",doors["data"]["hood"]["value"])
-        UpdateDoorOrWindow(vin,TAILGATE,"Tailgate",doors["data"]["tailgate"]["value"])
-        UpdateDoorOrWindow(vin,FRONTLEFTDOOR,"FrontLeftDoor",doors["data"]["frontLeftDoor"]["value"])
-        UpdateDoorOrWindow(vin,FRONTRIGHTDOOR,"FrontRightDoor",doors["data"]["frontRightDoor"]["value"])
-        UpdateDoorOrWindow(vin,REARLEFTDOOR,"RearLeftDoor",doors["data"]["rearLeftDoor"]["value"])
-        UpdateDoorOrWindow(vin,REARRIGHTDOOR,"RearRightDoor",doors["data"]["rearRightDoor"]["value"])
-        UpdateDoorOrWindow(vin,TANKLID,"TankLid",doors["data"]["tankLid"]["value"])
-        UpdateLock(vin,CARLOCKED,"centralLock",doors["data"]["centralLock"]["value"])
+        data = doors.get("data", {})
+        UpdateDoorOrWindow(vin,HOOD,"Hood", data.get("hood", {}).get("value", "UNKNOWN"))
+        UpdateDoorOrWindow(vin,TAILGATE,"Tailgate", data.get("tailgate", {}).get("value", "UNKNOWN"))
+        UpdateDoorOrWindow(vin,FRONTLEFTDOOR,"FrontLeftDoor", data.get("frontLeftDoor", {}).get("value", "UNKNOWN"))
+        UpdateDoorOrWindow(vin,FRONTRIGHTDOOR,"FrontRightDoor", data.get("frontrightDoor", data.get("frontRightDoor", {})).get("value", "UNKNOWN"))
+        UpdateDoorOrWindow(vin,REARLEFTDOOR,"RearLeftDoor", data.get("rearLeftDoor", {}).get("value", "UNKNOWN"))
+        UpdateDoorOrWindow(vin,REARRIGHTDOOR,"RearRightDoor", data.get("rearRightDoor", {}).get("value", "UNKNOWN"))
+        UpdateDoorOrWindow(vin,TANKLID,"TankLid", data.get("tankLid", {}).get("value", "UNKNOWN"))
+        UpdateLock(vin,CARLOCKED,"centralLock", data.get("centralLock", {}).get("value", "UNKNOWN"))
     else:
         Error("Updating Doors failed")
 
@@ -680,10 +687,11 @@ def GetTyreStatus():
     TyreStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/tyres","application/json")
     if TyreStatus:
         Debug(json.dumps(TyreStatus))
-        UpdateTyrePressure(TyreStatus["data"]["frontRight"]["value"],FRONTRIGHTTYREPRESSURE,"FrontRightTyrePressure")
-        UpdateTyrePressure(TyreStatus["data"]["frontLeft"]["value"],FRONTLEFTTYREPRESSURE,"FrontLeftTyrePressure")
-        UpdateTyrePressure(TyreStatus["data"]["rearRight"]["value"],REARRIGHTTYREPRESSURE,"RearRightTyrePressure")
-        UpdateTyrePressure(TyreStatus["data"]["rearLeft"]["value"],REARLEFTTYREPRESSURE,"RearLeftTyrePressure")
+        data = TyreStatus.get("data", {})
+        UpdateTyrePressure(data.get("frontRight", {}).get("value", "UNKNOWN"),FRONTRIGHTTYREPRESSURE,"FrontRightTyrePressure")
+        UpdateTyrePressure(data.get("frontLeft", {}).get("value", "UNKNOWN"),FRONTLEFTTYREPRESSURE,"FrontLeftTyrePressure")
+        UpdateTyrePressure(data.get("rearRight", {}).get("value", "UNKNOWN"),REARRIGHTTYREPRESSURE,"RearRightTyrePressure")
+        UpdateTyrePressure(data.get("rearLeft", {}).get("value", "UNKNOWN"),REARLEFTTYREPRESSURE,"RearLeftTyrePressure")
     else:
         Error("Updating Tyre Status failed")
 
@@ -695,41 +703,40 @@ def GetWarnings():
     WarningStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/warnings","application/json")
     if WarningStatus:
         Debug(json.dumps(WarningStatus))
-        UpdateWarning(WarningStatus["data"]["brakeLightCenterWarning"]["value"],BRAKELIGHTCENTERWARNING,"BrakeLightCenterWarning")
-        UpdateWarning(WarningStatus["data"]["brakeLightLeftWarning"]["value"],BRAKELIGHTLEFTWARNING,"BrakeLightLeftWarning")
-        UpdateWarning(WarningStatus["data"]["brakeLightRightWarning"]["value"],BRAKELIGHTRIGHTWARNING,"BrakeLightRightWarning")
-        UpdateWarning(WarningStatus["data"]["fogLightFrontWarning"]["value"],FOGLIGHTFRONTWARNING,"fogLightFrontWarning")
-        UpdateWarning(WarningStatus["data"]["fogLightRearWarning"]["value"],FOGLIGHTREARWARNING,"fogLightRearWarning")
-        UpdateWarning(WarningStatus["data"]["positionLightFrontLeftWarning"]["value"],POSITIONLIGHTFRONTLEFTWARNING,"positionLightFrontLeftWarning")
-        UpdateWarning(WarningStatus["data"]["positionLightFrontRightWarning"]["value"],POSITIONLIGHTFRONTRIGHTWARNING,"positionLightFrontRightWarning")
-        UpdateWarning(WarningStatus["data"]["positionLightRearLeftWarning"]["value"],POSITIONLIGHTREARLEFTWARNING,"positionLightRearLeftWarning")
-        UpdateWarning(WarningStatus["data"]["positionLightRearRightWarning"]["value"],POSITIONLIGHTREARRIGHTWARNING,"positionLightRearRightWarning")
-        UpdateWarning(WarningStatus["data"]["highBeamLeftWarning"]["value"],HIGHBEAMLEFTWARNING,"highBeamLeftWarning")
-        UpdateWarning(WarningStatus["data"]["highBeamRightWarning"]["value"],HIGHBEAMRIGHTWARNING,"highBeamRightWarning")
-        UpdateWarning(WarningStatus["data"]["lowBeamLeftWarning"]["value"],LOWBEAMLEFTWARNING,"lowBeamLeftWarning")
-        UpdateWarning(WarningStatus["data"]["lowBeamRightWarning"]["value"],LOWBEAMRIGHTWARNING,"lowBeamRightWarning")
-        UpdateWarning(WarningStatus["data"]["daytimeRunningLightLeftWarning"]["value"],DAYTIMERUNNINGLIGHTLEFTWARNING,"daytimeRunningLightLeftWarning")
-        UpdateWarning(WarningStatus["data"]["daytimeRunningLightRightWarning"]["value"],DAYTIMERUNNINGLIGHTRIGHTWARNING,"daytimeRunningLightRightWarning")
-        UpdateWarning(WarningStatus["data"]["turnIndicationFrontLeftWarning"]["value"],TURNINDICATIONFRONTLEFTWARNING,"turnIndicationFrontLeftWarning")
-        UpdateWarning(WarningStatus["data"]["turnIndicationFrontRightWarning"]["value"],TURNINDICATIONFRONTRIGHTWARNING,"turnIndicationFrontRightWarning")
-        UpdateWarning(WarningStatus["data"]["turnIndicationRearLeftWarning"]["value"],TURNINDICATIONREARLEFTWARNING,"turnIndicationRearLeftWarning")
-        UpdateWarning(WarningStatus["data"]["turnIndicationRearRightWarning"]["value"],TURNINDICATIONREARRIGHTWARNING,"turnIndicationRearRightWarning")
-        UpdateWarning(WarningStatus["data"]["registrationPlateLightWarning"]["value"],REGISTRATIONPLATELIGHTWARNING,"registrationPlateLightWarning")
-        UpdateWarning(WarningStatus["data"]["sideMarkLightsWarning"]["value"],SIDEMARKLIGHTSWARNING,"sideMarkLightsWarning")
-        UpdateWarning(WarningStatus["data"]["hazardLightsWarning"]["value"],HAZARDLIGHTSWARNING,"hazardMarkLightsWarning")
-        UpdateWarning(WarningStatus["data"]["reverseLightsWarning"]["value"],REVERSELIGHTSWARNING,"reverseMarkLightsWarning")
+        data = WarningStatus.get("data", {})
+        UpdateWarning(data.get("brakeLightCenterWarning", {}).get("value", "UNKNOWN"),BRAKELIGHTCENTERWARNING,"BrakeLightCenterWarning")
+        UpdateWarning(data.get("brakeLightLeftWarning", {}).get("value", "UNKNOWN"),BRAKELIGHTLEFTWARNING,"BrakeLightLeftWarning")
+        UpdateWarning(data.get("brakeLightRightWarning", {}).get("value", "UNKNOWN"),BRAKELIGHTRIGHTWARNING,"BrakeLightRightWarning")
+        UpdateWarning(data.get("fogLightFrontWarning", {}).get("value", "UNKNOWN"),FOGLIGHTFRONTWARNING,"fogLightFrontWarning")
+        UpdateWarning(data.get("fogLightRearWarning", {}).get("value", "UNKNOWN"),FOGLIGHTREARWARNING,"fogLightRearWarning")
+        UpdateWarning(data.get("positionLightFrontLeftWarning", {}).get("value", "UNKNOWN"),POSITIONLIGHTFRONTLEFTWARNING,"positionLightFrontLeftWarning")
+        UpdateWarning(data.get("positionLightFrontRightWarning", {}).get("value", "UNKNOWN"),POSITIONLIGHTFRONTRIGHTWARNING,"positionLightFrontRightWarning")
+        UpdateWarning(data.get("positionLightRearLeftWarning", {}).get("value", "UNKNOWN"),POSITIONLIGHTREARLEFTWARNING,"positionLightRearLeftWarning")
+        UpdateWarning(data.get("positionLightRearRightWarning", {}).get("value", "UNKNOWN"),POSITIONLIGHTREARRIGHTWARNING,"positionLightRearRightWarning")
+        UpdateWarning(data.get("highBeamLeftWarning", {}).get("value", "UNKNOWN"),HIGHBEAMLEFTWARNING,"highBeamLeftWarning")
+        UpdateWarning(data.get("highBeamRightWarning", {}).get("value", "UNKNOWN"),HIGHBEAMRIGHTWARNING,"highBeamRightWarning")
+        UpdateWarning(data.get("lowBeamLeftWarning", {}).get("value", "UNKNOWN"),LOWBEAMLEFTWARNING,"lowBeamLeftWarning")
+        UpdateWarning(data.get("lowBeamRightWarning", {}).get("value", "UNKNOWN"),LOWBEAMRIGHTWARNING,"lowBeamRightWarning")
+        UpdateWarning(data.get("daytimeRunningLightLeftWarning", {}).get("value", "UNKNOWN"),DAYTIMERUNNINGLIGHTLEFTWARNING,"daytimeRunningLightLeftWarning")
+        UpdateWarning(data.get("daytimeRunningLightRightWarning", {}).get("value", "UNKNOWN"),DAYTIMERUNNINGLIGHTRIGHTWARNING,"daytimeRunningLightRightWarning")
+        UpdateWarning(data.get("turnIndicationFrontLeftWarning", {}).get("value", "UNKNOWN"),TURNINDICATIONFRONTLEFTWARNING,"turnIndicationFrontLeftWarning")
+        UpdateWarning(data.get("turnIndicationFrontRightWarning", {}).get("value", "UNKNOWN"),TURNINDICATIONFRONTRIGHTWARNING,"turnIndicationFrontRightWarning")
+        UpdateWarning(data.get("turnIndicationRearLeftWarning", {}).get("value", "UNKNOWN"),TURNINDICATIONREARLEFTWARNING,"turnIndicationRearLeftWarning")
+        UpdateWarning(data.get("turnIndicationRearRightWarning", {}).get("value", "UNKNOWN"),TURNINDICATIONREARRIGHTWARNING,"turnIndicationRearRightWarning")
+        UpdateWarning(data.get("registrationPlateLightWarning", {}).get("value", "UNKNOWN"),REGISTRATIONPLATELIGHTWARNING,"registrationPlateLightWarning")
+        UpdateWarning(data.get("sideMarkLightsWarning", {}).get("value", "UNKNOWN"),SIDEMARKLIGHTSWARNING,"sideMarkLightsWarning")
+        UpdateWarning(data.get("hazardLightsWarning", {}).get("value", "UNKNOWN"),HAZARDLIGHTSWARNING,"hazardMarkLightsWarning")
+        UpdateWarning(data.get("reverseLightsWarning", {}).get("value", "UNKNOWN"),REVERSELIGHTSWARNING,"reverseMarkLightsWarning")
     else:
         Error("Updating Tyre Status failed")
-
-def UpdateLevel(status,idx,name):
-    UpdateTextSensor(vin,idx,name,status)
 
 def GetEngineStatus():
     Debug("GetEngineStatus() called")
     EngineStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/engine-status","application/json")
     if EngineStatus:
         Debug(json.dumps(EngineStatus))
-        if EngineStatus["data"]["engineStatus"]["value"]=="STOPPED":
+        data = EngineStatus.get("data", {})
+        if data.get("engineStatus", {}).get("value", "STOPPED") == "STOPPED":
             UpdateSwitch(vin,ENGINERUNNING,"engineStatus",0,"Off")
         else:
             UpdateSwitch(vin,ENGINERUNNING,"engineStatus",1,"On")
@@ -741,8 +748,9 @@ def GetEngine():
     EngineStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/engine","application/json")
     if EngineStatus:
         Debug(json.dumps(EngineStatus))
-        UpdateLevel(EngineStatus["data"]["engineCoolantLevelWarning"]["value"],ENGINECOOLANTLEVEL,"engineCoolantLevel")
-        UpdateLevel(EngineStatus["data"]["oilLevelWarning"]["value"],OILLEVEL,"oilLevel")
+        data = EngineStatus.get("data", {})
+        UpdateTextSensor(vin,ENGINECOOLANTLEVEL,"engineCoolantLevel", data.get("engineCoolantLevelWarning", {}).get("value", "UNKNOWN"))
+        UpdateTextSensor(vin,OILLEVEL,"oilLevel", data.get("oilLevelWarning", {}).get("value", "UNKNOWN"))
     else:
         Error("Updating Engine failed")
 
@@ -752,21 +760,17 @@ def GetDiagnostics():
         Diagnostics=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/diagnostics","application/json")
         if Diagnostics:
             Debug(json.dumps(Diagnostics))
-            
+            data = Diagnostics.get("data", {})
             #update selector switch for Washerfluidlevel
-            UpdateLevel(Diagnostics["data"]["washerFluidLevelWarning"]["value"],WASHERFLUIDLEVEL,"WasherFluidLevel")
-           
-           #update engineHoursToService
+            UpdateTextSensor(vin,WASHERFLUIDLEVEL,"WasherFluidLevel", data.get("washerFluidLevelWarning", {}).get("value", "UNKNOWN"))
+            #update engineHoursToService
             SafeUpdateSensor(vin,ENGINEHOURSTOSERVICE,"EngineHoursToService",243,31,{'Custom':'1;hrs'},Diagnostics,"engineHoursToService")
-
             #update kmToService
-            SafeUpdateSensor(vin,KMTOSERVICE,"KmToService",243,31,{'Custom':'1;km'},Diagnostics, "distanceToService")
-
+            SafeUpdateSensor(vin,KMTOSERVICE,"KmToService",243,31,{'Custom':'1;km'},Diagnostics,"kmToService")
             #update monthsToService
             SafeUpdateSensor(vin,MONTHSTOSERVICE,"MonthsToService",243,31,{'Custom':'1;months'},Diagnostics,"timeToService")
-
             #update selector switch for ServiceStatus
-            UpdateTextSensor(vin,SERVICESTATUS,"ServiceStatus", Diagnostics["data"]["serviceWarning"]["value"])
+            UpdateTextSensor(vin,SERVICESTATUS,"ServiceStatus", data.get("serviceWarning", {}).get("value", "UNKNOWN"))
         else:
             Error("Updating Diagnostics failed")
     except Exception as error:
@@ -775,22 +779,24 @@ def GetDiagnostics():
 
 def GetCommandAccessabilityStatus():
     Debug("GetCommandAccessibilityStatus() called")
-    CAStatus=VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/"+vin+"/command-accessibility","application/json")
+    CAStatus = VolvoAPI("https://api.volvocars.com/connected-vehicle/v2/vehicles/" + vin + "/command-accessibility", "application/json")
     if CAStatus:
         Debug(json.dumps(CAStatus))
-        UpdateTextSensor(vin,AVAILABILITYSTATUS,"availabilityStatus", CAStatus["data"]["availabilityStatus"]["value"])
-        try:
-           UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", CAStatus["data"]["availabilityStatus"]["unavailableReason"])
-           if CAStatus["data"]["availabilityStatus"]["unavailableReason"]=="CAR_IN_USE":
-               Debug("Car is drving, set current location to unknown")
-               UpdateTextSensor(vin,CURRENTLOCATION,"Current Location","Unknown (Car is in use)")
-               UpdateSwitch(vin,CARHASMOVED,"Car is moving or moved",1,"On")
+        # Veilig ophalen van availabilityStatus en unavailableReason
+        data = CAStatus.get("data", {})
+        availability = data.get("availabilityStatus", {})
+        availability_value = availability.get("value", "UNKNOWN")
+        unavailable_reason = availability.get("unavailableReason", "Online")
 
-        except Exception as error:
-            Debug("no unavaible reason found, so car is online, error: "+str(error))
-            UpdateTextSensor(vin,UNAVAILABLEREASON,"unavailableReason", "Online")
+        UpdateTextSensor(vin, AVAILABILITYSTATUS, "availabilityStatus", availability_value)
+        UpdateTextSensor(vin, UNAVAILABLEREASON, "unavailableReason", unavailable_reason)
 
-        if (Devices[vin].Units[AVAILABILITYSTATUS].sValue!="AVAILABLE" and Devices[vin].Units[UNAVAILABLEREASON].sValue!="CAR_IN_USE"):
+        if unavailable_reason == "CAR_IN_USE":
+            Debug("Car is driving, set current location to unknown")
+            UpdateTextSensor(vin, CURRENTLOCATION, "Current Location", "Unknown (Car is in use)")
+            UpdateSwitch(vin, CARHASMOVED, "Car is moving or moved", 1, "On")
+
+        if (Devices[vin].Units[AVAILABILITYSTATUS].sValue != "AVAILABLE" and Devices[vin].Units[UNAVAILABLEREASON].sValue != "CAR_IN_USE"):
             Error("Car unavailable, check AVAILABILTYSTATUS sensor to see why the car is unavailable")
         else:
             Debug("Car is available")
@@ -1057,38 +1063,51 @@ def getOutSideTemperature(longitude,latitude):
 
 def GetLocation():
     Debug("GetLocation() called")
-    Location=VolvoAPI("https://api.volvocars.com/location/v1/vehicles/"+vin+"/location","application/json")
+    Location = VolvoAPI("https://api.volvocars.com/location/v1/vehicles/" + vin + "/location", "application/json")
     if Location:
         Debug(json.dumps(Location))
-        Debug("Location is " + str(Location["data"]["geometry"]["coordinates"][0]))
-        UpdateSensor(vin,LONGITUDE,"Longitude",243,31,{'Custom':'1;lon'}, int(Location["data"]["geometry"]["coordinates"][0]), Location["data"]["geometry"]["coordinates"][0])
-        UpdateSensor(vin,LATTITUDE,"Lattitude",243,31,{'Custom':'1;lat'}, int(Location["data"]["geometry"]["coordinates"][1]), Location["data"]["geometry"]["coordinates"][1])
-        UpdateSensor(vin,ALTITUDE,"Altitude",243,31,{'Custom':'1;alt'}, int(Location["data"]["geometry"]["coordinates"][2]), Location["data"]["geometry"]["coordinates"][2])
-        UpdateSensor(vin,HEADING,"Heading",243,31,{'Custom':'1;degrees'}, int(Location["data"]["properties"]["heading"]), str(Location["data"]["properties"]["heading"]))
+        data = Location.get("data", {})
+        geometry = data.get("geometry", {})
+        coordinates = geometry.get("coordinates", [])
+        properties = data.get("properties", {})
 
-        #update temperature around car (if openweather token is present)
-        if openweather_token:
-            getOutSideTemperature(Location["data"]["geometry"]["coordinates"][0],Location["data"]["geometry"]["coordinates"][1])
+        # Check if coordinates have at least 3 values
+        if isinstance(coordinates, list) and len(coordinates) >= 3:
+            longitude = coordinates[0]
+            latitude = coordinates[1]
+            altitude = coordinates[2]
+            UpdateSensor(vin, LONGITUDE, "Longitude", 243, 31, {'Custom': '1;lon'}, int(longitude), longitude)
+            UpdateSensor(vin, LATTITUDE, "Lattitude", 243, 31, {'Custom': '1;lat'}, int(latitude), latitude)
+            UpdateSensor(vin, ALTITUDE, "Altitude", 243, 31, {'Custom': '1;alt'}, int(altitude), altitude)
+        else:
+            Error("Location coordinates missing or incomplete in response")
 
-        #update distance to car
-        if len(Settings["Location"])>0:
-            Debug ( "Domoticz location is "+Settings["Location"])
-            DomoticzLocation=Settings["Location"].split(";")
-            if len(DomoticzLocation)==2:
-                VolvoLocation=(Location["data"]["geometry"]["coordinates"][1],Location["data"]["geometry"]["coordinates"][0])
-                Distance2Home=DistanceBetweenCoords(DomoticzLocation, VolvoLocation)
-                Debug("Distance to volvo is "+str(Distance2Home))
-                UpdateSensor(vin,DISTANCE2HOME,"Distance2Home",243,31,{'Custom':'1;km'}, int(Distance2Home), str(Distance2Home))
+        # Heading
+        heading = properties.get("heading")
+        if heading is not None:
+            UpdateSensor(vin, HEADING, "Heading", 243, 31, {'Custom': '1;degrees'}, int(heading), str(heading))
+        else:
+            Error("Heading missing in location response")
+
+        # update temperature around car (if openweather token is present)
+        if openweather_token and isinstance(coordinates, list) and len(coordinates) >= 2:
+            getOutSideTemperature(coordinates[0], coordinates[1])
+
+        # update distance to car
+        if len(Settings["Location"]) > 0:
+            Debug("Domoticz location is " + Settings["Location"])
+            DomoticzLocation = Settings["Location"].split(";")
+            if len(DomoticzLocation) == 2 and isinstance(coordinates, list) and len(coordinates) >= 2:
+                VolvoLocation = (coordinates[1], coordinates[0])
+                Distance2Home = DistanceBetweenCoords(DomoticzLocation, VolvoLocation)
+                Debug("Distance to volvo is " + str(Distance2Home))
+                UpdateSensor(vin, DISTANCE2HOME, "Distance2Home", 243, 31, {'Custom': '1;km'}, int(Distance2Home), str(Distance2Home))
             else:
-                Debug("Invalid location entered in domoticz config")
+                Debug("Invalid location entered in domoticz config or coordinates missing")
         else:
             Debug("No location entered in domoticz config")
-
-
     else:
         Error("GetLocation failed")
-
-
 
 def UpdateABRP():
     try:
