@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# other
+tmp
+token.*
+triplog.csv
+volvo_api.ini
+volvo_api.ini.test
+
