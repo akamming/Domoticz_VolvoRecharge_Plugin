@@ -1000,18 +1000,26 @@ def GetRechargeStatus():
         if chargerConnectionStatus is None:
             Debug("ChargerConnectionStatus is not supported")
         else:
-            if chargerConnectionStatus=="DISCONNECTED":
+            distance2home=float(Devices[vin].Units[DISTANCE2HOME].sValue)
+            if distance2home>HOMECHARGINGRADIUS:   
+                # If the car is outside the home charging radius, set EVCCConnectedStatus to A
+                Debug("Car is outside home charging radius, setting EVCCConnectedStatus to A")
                 UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "A")
-            elif chargerConnectionStatus=="CONNECTED":
-                if chargingStatus=="CHARGING":
-                    UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "C")
-                else:
-                    UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "B")
-            elif chargerConnectionStatus=="FAULT":
-                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "D")
             else:
-                Error("ChargerConnectionStatus not supported, setting EVCCConnectedStatus to E")
-                UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "E")
+                # if the car is within the home charging radius, check charger connection status
+                Debug("Car is within home charging radius, checking charger connection status")
+                if chargerConnectionStatus=="DISCONNECTED":
+                    UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "A")
+                elif chargerConnectionStatus=="CONNECTED":
+                    if chargingStatus=="CHARGING":
+                        UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "C")
+                    else:
+                        UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "B")
+                elif chargerConnectionStatus=="FAULT":
+                    UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "D")
+                else:
+                    Error("ChargerConnectionStatus not supported, setting EVCCConnectedStatus to E")
+                    UpdateTextSensor(vin,EVCCCONNECTEDSTATUS,"evccConnectedStatus", "E")
 
     else:
         Error("Updating Recharge Status failed")
