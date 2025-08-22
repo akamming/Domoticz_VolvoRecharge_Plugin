@@ -68,7 +68,7 @@ LOCKTIMEOUT=60 #can take longer when car is in deepsleep
 MINTIMEBETWEENLOGINATTEMPTS=600 #10 mins
 HOMECHARGINGRADIUS=0.050 # 50 meter (assume the car is using the home charger when with 25 meters)
 MINDIFFBETWEENCOORDS=0.025 # Only record new trip if new destination is further away than this distance from the previous location
-MAXUPDATEINTERVAL=24*3600 # Max number of seconds every sensor has to update when value has not changed, defaults to once per day
+MAXUPDATEINTERVAL=30*60 # Max number of seconds every sensor has to update when value has not changed, defaults to once per 30 minutes
 TIMETOSETKWHMETERTOZERO=300 #Report 0 usage if no more updates
 APISTATUSNAME="API Status" #Default devicename of APIStatus device
 
@@ -584,12 +584,12 @@ def UpdateLock(vin,idx,name,value):
         Domoticz.Unit(Name=Parameters["Name"]+"-"+name, Unit=idx, Type=244, Subtype=73, Switchtype=19, DeviceID=vin, Used=False).Create()
 
     try:
-        if value=="LOCKED" and Devices[vin].Units[idx].nValue==0:
+        if value=="LOCKED" and (Devices[vin].Units[idx].nValue==0 or TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()>MAXUPDATEINTERVAL):
             Devices[vin].Units[idx].nValue = 1
             Devices[vin].Units[idx].sValue = "Locked"
             Devices[vin].Units[idx].Update(Log=True)
             Domoticz.Log("Door Lock ("+Devices[vin].Units[idx].Name+")")
-        elif value=="UNLOCKED" and Devices[vin].Units[idx].nValue==1:
+        elif value=="UNLOCKED" and (Devices[vin].Units[idx].nValue==1 or TimeElapsedSinceLastUpdate(Devices[vin].Units[idx].LastUpdate).total_seconds()>MAXUPDATEINTERVAL):
             Devices[vin].Units[idx].nValue = 0
             Devices[vin].Units[idx].sValue = "Unlocked"
             Devices[vin].Units[idx].Update(Log=True)
