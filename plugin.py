@@ -314,51 +314,51 @@ def CheckRefreshToken():
         else:
             Debug("Not logged in, retrying in "+str(MINTIMEBETWEENLOGINATTEMPTS-(time.time()-lastloginattempttimestamp))+" seconds")
 
-def VolvoAPI(url,mediatype):
+def VolvoAPI(url, mediatype):
     global vin
 
-    Debug("VolvoAPI("+url+","+mediatype+") called")
+    Debug("VolvoAPI(" + url + "," + mediatype + ") called")
     try:
-        starttime=datetime.datetime.now()
+        starttime = datetime.datetime.now()
         status = requests.get(
             url,
-            headers= {
+            headers={
                 "accept": mediatype,
                 "vcc-api-key": vccapikey,
                 "Authorization": "Bearer " + access_token
             },
             timeout=TIMEOUT
         )
-        endtime=datetime.datetime.now()
+        endtime = datetime.datetime.now()
 
         Debug("\nResult:")
         Debug(status)
-        Debug("Result took "+str(endtime-starttime))
+        Debug("Result took " + str(endtime - starttime))
 
         try:
             resp_json = status.json()
         except Exception as json_error:
-            Error("Response from "+url+" is not valid JSON: "+str(json_error))
-            output=status.text
-            Error("Raw response: "+output)
-            UpdateTextSensor(Parameters["Name"],APISTATUS,APISTATUSNAME,f"API Error: {output}")
+            Error("Response from " + url + " is not valid JSON: " + str(json_error))
+            output = status.text if status is not None and hasattr(status, 'text') else f"JSON Error: {str(json_error)}"
+            Error("Raw response: " + output)
+            UpdateTextSensor(Parameters["Name"], APISTATUS, APISTATUSNAME, f"API Error: {output}")
             return None
 
         if status.status_code != 200:
-            Error("VolvoAPI failed calling "+url+", HTTP Statuscode "+str(status.status_code))
-            Error("Response: "+json.dumps(resp_json, indent=4))
-            output=status.text
-            UpdateTextSensor(Parameters["Name"],APISTATUS,APISTATUSNAME,f"API Error: {output}")
+            Error("VolvoAPI failed calling " + url + ", HTTP Statuscode " + str(status.status_code))
+            Error("Response: " + json.dumps(resp_json, indent=4))
+            output = status.text if status is not None and hasattr(status, 'text') else f"HTTP {status.status_code} Error"
+            UpdateTextSensor(Parameters["Name"], APISTATUS, APISTATUSNAME, f"API Error: {output}")
         else:
             Debug("\nResult JSON:")
             Debug(json.dumps(resp_json, indent=4))
-            UpdateTextSensor(Parameters["Name"],APISTATUS,APISTATUSNAME,"Connected")
+            UpdateTextSensor(Parameters["Name"], APISTATUS, APISTATUSNAME, "Connected")
             return resp_json
 
     except Exception as error:
-        output=status.text
-        UpdateTextSensor(Parameters["Name"],APISTATUS,APISTATUSNAME,f"API Error: {output}")
-        Error("VolvoAPI failed calling "+url+" with mediatype "+mediatype+" failed")
+        output = status.text if 'status' in locals() and status is not None and hasattr(status, 'text') else f"Request Error: {str(error)}"
+        UpdateTextSensor(Parameters["Name"], APISTATUS, APISTATUSNAME, f"API Error: {output}")
+        Error("VolvoAPI failed calling " + url + " with mediatype " + mediatype + " failed")
         Error(str(error))
         return None
 
