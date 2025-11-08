@@ -1328,8 +1328,20 @@ def UpdateLastKnownLocation():
                 TripPercentage=int(oldPercentage-currentPercentage)
                 currentFriendlyAdress=GetFriendlyAdress(currentLattitude,currentLongitude)
                 TripDurationPrecise=TimeElapsedSinceLastUpdate(Devices[vin].Units[CARHASMOVED].LastUpdate)
-                TripDuration=datetime.timedelta(seconds=TripDurationPrecise.seconds) #strip the microseconds
-                TripSpeed=int(((Triplength*1000.0)/TripDuration.total_seconds())*3.6)
+                if TripDurationPrecise is None:
+                    TripDuration = datetime.timedelta(0)
+                    TripSpeed = 0
+                else:
+                    TripSeconds = TripDurationPrecise.total_seconds()
+                    if TripSeconds <= 0:
+                        TripDuration = datetime.timedelta(0)
+                        TripSpeed = 0
+                    else:
+                        TripDuration = datetime.timedelta(seconds=int(TripSeconds))  # strip microseconds
+                        try:
+                            TripSpeed = int(((Triplength * 1000.0) / TripDuration.total_seconds()) * 3.6)
+                        except ZeroDivisionError:
+                            TripSpeed = 0
 
                 #Update the sensros
                 UpdateSwitch(vin,CARHASMOVED,"Car is moving or moved",0,"Off") #Reset flag to prevent duplicate entries
