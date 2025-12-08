@@ -51,7 +51,9 @@
 """
 #needed modules
 import DomoticzEx as Domoticz
-import requests
+import urllib.request
+import urllib.error
+import urllib.parse
 import json
 import datetime
 from datetime import timezone
@@ -235,32 +237,37 @@ def RefreshVOCToken():
     Debug("RefreshVOCToken() called")
     
     try:
-        response = requests.post(
+        data = urllib.parse.urlencode({
+            'access_token_manager_id': 'JWTh4Yf0b',
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token
+        }).encode('utf-8')
+
+        req = urllib.request.Request(
             "https://volvoid.eu.volvocars.com/as/token.oauth2",
+            data=data,
             headers = {
                 'authorization': 'Basic aDRZZjBiOlU4WWtTYlZsNnh3c2c1WVFxWmZyZ1ZtSWFEcGhPc3kxUENhVXNpY1F0bzNUUjVrd2FKc2U0QVpkZ2ZJZmNMeXc=',
                 'content-type': 'application/x-www-form-urlencoded',
                 'user-agent': 'okhttp/4.10.0'
-            },
-            data = {
-                'access_token_manager_id': 'JWTh4Yf0b',
-                'grant_type': 'refresh_token',
-                'refresh_token': refresh_token
-            }, 
-            timeout=TIMEOUT
+            }
         )
-        if response.status_code!=200:
-            Error("VolvoAPI failed calling https://volvoid.eu.volvocars.com/as/token.oauth2, HTTP Statuscode "+str(response.status_code))
-            Error(json.dumps(response.json(),indent=4))
+
+        response = urllib.request.urlopen(req, timeout=TIMEOUT)
+        response_data = response.read().decode('utf-8')
+        response_json = json.loads(response_data)
+        if response.status != 200:
+            Error("VolvoAPI failed calling https://volvoid.eu.volvocars.com/as/token.oauth2, HTTP Statuscode "+str(response.status))
+            Error(json.dumps(response_json,indent=4))
             access_token=None
             refresh_token=None
         else:
-            Debug(json.dumps(response.json(),indent=4))
+            Debug(json.dumps(response_json,indent=4))
             Info("Refreshed token successful!")
-            Debug("Volvo responded: "+str(response.json()))
+            Debug("Volvo responded: "+str(response_json))
 
             #retrieve tokens
-            resp_json = response.json()
+            resp_json = response_json
             access_token = resp_json.get('access_token')
             if resp_json.get('refresh_token'):
                 Debug("refresh token exists")
@@ -320,15 +327,15 @@ def VolvoAPI(url, mediatype):
     Debug("VolvoAPI(" + url + "," + mediatype + ") called")
     try:
         starttime = datetime.datetime.now()
-        status = requests.get(
+        req = urllib.request.Request(
             url,
             headers={
                 "accept": mediatype,
                 "vcc-api-key": vccapikey,
                 "Authorization": "Bearer " + access_token
-            },
-            timeout=TIMEOUT
+            }
         )
+        status = urllib.request.urlopen(req, timeout=TIMEOUT)
         endtime = datetime.datetime.now()
 
         Debug("\nResult:")
@@ -336,18 +343,19 @@ def VolvoAPI(url, mediatype):
         Debug("Result took " + str(endtime - starttime))
 
         try:
-            resp_json = status.json()
+            response_data = status.read().decode('utf-8')
+            resp_json = json.loads(response_data)
         except Exception as json_error:
             Error("Response from " + url + " is not valid JSON: " + str(json_error))
-            output = status.text if status is not None and hasattr(status, 'text') else f"JSON Error: {str(json_error)}"
+            output = response_data if 'response_data' in locals() else f"JSON Error: {str(json_error)}"
             Error("Raw response: " + output)
             UpdateTextSensor(Parameters["Name"], APISTATUS, APISTATUSNAME, f"API Error: {output}")
             return None
 
-        if status.status_code != 200:
-            Error("VolvoAPI failed calling " + url + ", HTTP Statuscode " + str(status.status_code))
+        if status.status != 200:
+            Error("VolvoAPI failed calling " + url + ", HTTP Statuscode " + str(status.status))
             Error("Response: " + json.dumps(resp_json, indent=4))
-            output = status.text if status is not None and hasattr(status, 'text') else f"HTTP {status.status_code} Error"
+            output = response_data if 'response_data' in locals() else f"HTTP {status.status} Error"
             UpdateTextSensor(Parameters["Name"], APISTATUS, APISTATUSNAME, f"API Error: {output}")
         else:
             Debug("\nResult JSON:")
@@ -356,7 +364,7 @@ def VolvoAPI(url, mediatype):
             return resp_json
 
     except Exception as error:
-        output = status.text if 'status' in locals() and status is not None and hasattr(status, 'text') else f"Request Error: {str(error)}"
+        output = response_data if 'response_data' in locals() else f"Request Error: {str(error)}"
         UpdateTextSensor(Parameters["Name"], APISTATUS, APISTATUSNAME, f"API Error: {output}")
         Error("VolvoAPI failed calling " + url + " with mediatype " + mediatype + " failed")
         Error(str(error))
@@ -1085,12 +1093,14 @@ def getOutSideTemperature(longitude,latitude):
     
     try:
         url="https://api.openweathermap.org/data/2.5/weather?lat="+str(latitude)+"&lon="+str(longitude)+"&appid="+str(openweather_token)+"&units=metric"
-        response = requests.post(url , timeout=TIMEOUT) 
-        if response.status_code!=200:
-            Error("Error calling"+url+", HTTP Statuscode "+str(response.status_code))
+        req = urllib.request.Request(url)
+        response = urllib.request.urlopen(req, timeout=TIMEOUT)
+        response_data = response.read().decode('utf-8')
+        if response.status != 200:
+            Error("Error calling"+url+", HTTP Statuscode "+str(response.status))
         else:
-            Debug("OpenWeather responded: "+str(response.json()))
-            ow=response.json()
+            Debug("OpenWeather responded: "+str(response_data))
+            ow = json.loads(response_data)
             UpdateSensor(vin,OUTSIDETEMP,"Outside Temperature",80,5,None,int(ow["main"]["temp"]),ow["main"]["temp"])
             WindValue=str(ow["wind"]["deg"])+";"+degToCompass(ow["wind"]["deg"])+";"+str(ow["wind"]["speed"])+";"+str(ow["wind"]["gust"])+";"+str(ow["main"]["temp"])+";"+str(ow["main"]["feels_like"])
             UpdateSensor(vin,OUTSIDEWIND,"Outside Wind",86,1,None,None,WindValue)
@@ -1183,9 +1193,12 @@ def UpdateABRP():
             url='http://api.iternio.com/1/tlm/send?api_key='+abrp_api_key+'&token='+abrp_token+'&tlm={"utc":'+str(utc_timestamp)+',"soc":'+str(chargelevel)+',"is_charging":'+str(is_charging)+',"is_dcfc":'+str(is_dcfc)+',"est_battery_range":'+str(RemainingRange)+',"odometer":'+str(odometer)+',"ext_temp":'+str(outsideTemp)+'}'
 
         Debug("ABRP url = "+url)
-        response=requests.get(url,timeout=TIMEOUT)
-        Debug(response.text)
-        if response.status_code==200 and response.json()["status"]=="ok":
+        req = urllib.request.Request(url)
+        response = urllib.request.urlopen(req, timeout=TIMEOUT)
+        response_data = response.read().decode('utf-8')
+        Debug(response_data)
+        response_json = json.loads(response_data)
+        if response.status == 200 and response_json["status"] == "ok":
             Debug("ABRP call succeeded")
         else:
             Error("ABRP call failed")
@@ -1199,15 +1212,18 @@ def GetFriendlyAdress(lattitude,longitude):
     if google_api_key:
         url="https://maps.googleapis.com/maps/api/geocode/json?latlng="+str(lattitude)+","+str(longitude)+"&key="+google_api_key
         Debug("Google url is "+url)
-        response=requests.get(url,timeout=TIMEOUT)
-        if response.status_code==200:
+        req = urllib.request.Request(url)
+        response = urllib.request.urlopen(req, timeout=TIMEOUT)
+        response_data = response.read().decode('utf-8')
+        if response.status == 200:
             try:
-                if response.json()["status"]=="OK":
-                    FriendlyAdress=response.json()["results"][0]["formatted_address"]
+                response_json = json.loads(response_data)
+                if response_json["status"] == "OK":
+                    FriendlyAdress = response_json["results"][0]["formatted_address"]
                 else:
-                    FriendlyAdress="Unknown Adress"
-                    Error("Google Geo Code Error (Did you enter a valid Google Geo Code API key in the config?) : "+response.json()["status"])
-                    Debug(json.dumps(response.json(),indent=4))
+                    FriendlyAdress = "Unknown Adress"
+                    Error("Google Geo Code Error (Did you enter a valid Google Geo Code API key in the config?) : "+response_json["status"])
+                    Debug(json.dumps(response_json,indent=4))
             except Exception as error:
                 Error("Error getting friendly adress"+str(error))
                 Error("Google response: "+response.text)
@@ -1461,33 +1477,36 @@ def InvokeCommand(url,message,invoketimeout):
 
     Debug("InvokeCommand("+url+","+str(message)+","+str(invoketimeout)+" called")
     starttime=datetime.datetime.now()
-    status = requests.post(
+    data = message.encode('utf-8')
+    req = urllib.request.Request(
         url,
+        data=data,
         headers= {
             "Content-Type": "application/json",
             "vcc-api-key": vccapikey,
             "Authorization": "Bearer " + access_token
-        },
-        data=message,
-        timeout=invoketimeout
+        }
     )
+    status = urllib.request.urlopen(req, timeout=invoketimeout)
     endtime=datetime.datetime.now()
 
     Debug("Invoke Command duration: "+str(endtime-starttime))
 
-    sjson = json.dumps(status.json(), indent=4)
+    response_data = status.read().decode('utf-8')
+    response_json = json.loads(response_data)
+    sjson = json.dumps(response_json, indent=4)
     Debug("Result JSON: "+str(sjson))
-    if status.status_code==200:
-        if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
+    if status.status == 200:
+        if (response_json["data"]["invokeStatus"] == "COMPLETED"):
             Debug("Command succesfully completed") 
             return True
         else:
-            Error("Invoke command failed, API returned code "+status.json()["data"]["invokeStatus"])
+            Error("Invoke command failed, API returned code "+response_json["data"]["invokeStatus"])
             return False
     else:
-        Error("InvokeCommand failed, webserver returned "+str(status.status_code)+", result: "+sjson)
+        Error("InvokeCommand failed, webserver returned "+str(status.status)+", result: "+sjson)
         #TODO: handle returncode 429
-        if status.status_code==429:
+        if status.status == 429:
             # Determine Sleep time
             Delay=60-(time.time()-lastupdate)+5
             Error("Retrying command in "+str(Delay)+" seconds")
@@ -1496,27 +1515,29 @@ def InvokeCommand(url,message,invoketimeout):
 
             #try again
             starttime=datetime.datetime.now()
-            status = requests.post(
+            req = urllib.request.Request(
                 url,
                 headers= {
                     "Content-Type": "application/json",
                     "vcc-api-key": vccapikey,
                     "Authorization": "Bearer " + access_token
-                },
-                timeout=invoketimeout
+                }
             )
+            status = urllib.request.urlopen(req, timeout=invoketimeout)
             endtime=datetime.datetime.now()
 
             Debug("Invoke Command retry duration: "+str(endtime-starttime))
 
-            sjson = json.dumps(status.json(), indent=4)
+            response_data = status.read().decode('utf-8')
+            response_json = json.loads(response_data)
+            sjson = json.dumps(response_json, indent=4)
             Debug("\nResult JSON: "+str(sjson))
-            if status.status_code==200:
-                if (status.json()["data"]["invokeStatus"]=="COMPLETED"):
+            if status.status == 200:
+                if (response_json["data"]["invokeStatus"] == "COMPLETED"):
                     Debug("Invoke command succesfully completed") 
                     return True
                 else:
-                    Error("Invoke command failed, API returned code "+status.json()["data"]["invokeStatus"])
+                    Error("Invoke command failed, API returned code "+response_json["data"]["invokeStatus"])
                     return False
             else:
                 Error("InvokeCommand failed again, webserver returned "+str(status.status_code)+", result: "+sjson)
