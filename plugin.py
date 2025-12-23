@@ -1477,7 +1477,13 @@ def InvokeCommand(url,message,invoketimeout):
 
     Debug("InvokeCommand("+url+","+str(message)+","+str(invoketimeout)+" called")
     starttime=datetime.datetime.now()
-    data = message.encode('utf-8')
+    
+    # Ensure POST even when no payload is required
+    if message is not None:
+        data = message.encode('utf-8')
+    else:
+        data = b""
+    
     req = urllib.request.Request(
         url,
         data=data,
