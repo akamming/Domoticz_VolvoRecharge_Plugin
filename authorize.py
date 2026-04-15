@@ -70,7 +70,7 @@ if auth.status_code == 200:
                       if response["status"]=="OTP_VERIFIED":
                             Debug("OTP succesful, continuing auth")
                             url=EnsureHTTPS(response["_links"]["continueAuthentication"]["href"] + "?action=continueAuthentication")
-                            auth=auth_session.get(url)
+                            auth=auth_session.post(url, data="{}")
                             response=auth.json()
                             Debug(json.dumps(response,indent=4))
                             if auth.status_code==200:
