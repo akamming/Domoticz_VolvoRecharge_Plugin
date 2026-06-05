@@ -1147,7 +1147,7 @@ def GetLocation():
             DomoticzLocation = Settings["Location"].split(";")
             if len(DomoticzLocation) == 2 and isinstance(coordinates, list) and len(coordinates) >= 2:
                 VolvoLocation = (coordinates[1], coordinates[0])
-                Distance2Home = DistanceBetweenCoords(DomoticzLocation, VolvoLocation)
+                Distance2Home = round(DistanceBetweenCoords(DomoticzLocation, VolvoLocation),3)
                 Debug("Distance to volvo is " + str(Distance2Home))
                 UpdateSensor(vin, DISTANCE2HOME, "Distance2Home", 243, 31, {'Custom': '1;km'}, int(Distance2Home), str(Distance2Home))
             else:
