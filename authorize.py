@@ -150,6 +150,7 @@ while True:
             _save_credentials = True
 
     config=configparser.ConfigParser()
+    config.read('token.ini')
     config["TOKEN"]={
             'access_token' : response['access_token'],
             'refresh_token' : response['refresh_token'],
