@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # Script for volvo plugin to generate .ini file with token using 2FA
+import argparse
 import getpass
 import time
 import json
@@ -11,12 +12,91 @@ import requests
 OAUTH_TOKEN_URL = "https://volvoid.eu.volvocars.com/as/token.oauth2"
 OAUTH_AUTH_URL = "https://volvoid.eu.volvocars.com/as/authorization.oauth2"
 
-#switch debugging on or off
-debug=False
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Authorize Volvo plugin and generate token.ini using 2FA"
+    )
+    parser.add_argument(
+        "-d",
+        "--debug",
+        action="store_true",
+        help="Enable verbose debug logging for Volvo API requests/responses",
+    )
+    return parser.parse_args()
+
+args = parse_args()
+debug = args.debug
+
 
 def Debug(text):
     if debug:
-        print (text)
+        print(text)
+
+
+def _redact_headers(headers):
+    redacted = {}
+    sensitive = {"authorization", "vcc-api-key", "cookie", "set-cookie"}
+    for key, value in headers.items():
+        if key.lower() in sensitive:
+            redacted[key] = "***REDACTED***"
+        else:
+            redacted[key] = value
+    return redacted
+
+
+def _safe_json(response):
+    try:
+        return response.json()
+    except ValueError:
+        return None
+
+
+def _redact_payload(payload):
+    if isinstance(payload, dict):
+        redacted = {}
+        sensitive = {"password", "otp", "access_token", "refresh_token", "code"}
+        for key, value in payload.items():
+            if key.lower() in sensitive:
+                redacted[key] = "***REDACTED***"
+            else:
+                redacted[key] = value
+        return redacted
+    return payload
+
+
+def DebugResponse(response, label):
+    if not debug:
+        return
+
+    Debug("")
+    Debug("========== " + label + " ==========")
+    Debug("Request: " + response.request.method + " " + response.request.url)
+    Debug("Request headers:")
+    Debug(json.dumps(_redact_headers(dict(response.request.headers)), indent=4))
+    request_body = response.request.body
+    if request_body is not None:
+        if isinstance(request_body, bytes):
+            request_body = request_body.decode("utf-8", errors="replace")
+        try:
+            parsed_body = json.loads(request_body)
+            request_body = json.dumps(_redact_payload(parsed_body), indent=4)
+        except (TypeError, ValueError):
+            pass
+        Debug("Request body:")
+        Debug(str(request_body))
+
+    Debug("Response status: " + str(response.status_code))
+    Debug("Response headers:")
+    Debug(json.dumps(dict(response.headers), indent=4))
+    response_json = _safe_json(response)
+    if response_json is not None:
+        Debug("Response body (json):")
+        Debug(json.dumps(response_json, indent=4))
+    else:
+        Debug("Response body (text):")
+        Debug(response.text)
+    Debug("====================================")
+    Debug("")
 
 def EnsureHTTPS(url):
     if url.startswith("http://"):
@@ -57,17 +137,22 @@ while True:
     auth_session = requests.session()
     auth_session.headers = {
         "authorization": "Basic aDRZZjBiOlU4WWtTYlZsNnh3c2c1WVFxWmZyZ1ZtSWFEcGhPc3kxUENhVXNpY1F0bzNUUjVrd2FKc2U0QVpkZ2ZJZmNMeXc=",
+        "vcc-api-key": vccapikey,
         'user-agent': 'okhttp/4.10.0',
         "Accept-Encoding": "gzip",
         "Content-Type": "application/json; charset=utf-8"
     }
 
     auth = auth_session.get(OAUTH_AUTH_URL + url_params)
+    DebugResponse(auth, "Initial authorization")
     if auth.status_code != 200:
         print("Error responding on OAUTH_URL: "+str(auth.status_code))
         break
 
-    response = auth.json()
+    response = _safe_json(auth)
+    if response is None:
+        print("Error: Expected JSON response from Volvo auth endpoint.")
+        break
     Debug(json.dumps(response,indent=4))
 
     if response["status"] != "USERNAME_PASSWORD_REQUIRED":
@@ -79,9 +164,10 @@ while True:
     body={ "username": username, "password": password }
     auth_session.headers.update({"x-xsrf-header": "PingFederate"})
     auth=auth_session.post(url,json.dumps(body))
+    DebugResponse(auth, "Check username/password")
     if auth.status_code != 200:
-        try:
-            err = auth.json()
+        err = _safe_json(auth)
+        if err:
             details = err.get("details", [])
             if any(d.get("code") == "CREDENTIAL_VALIDATION_FAILED" for d in details):
                 print("Incorrect username, password or API key. Please try again.")
@@ -90,13 +176,17 @@ while True:
                 password = getpass.getpass("Enter your VOC Password: ")
                 _save_credentials = False
                 continue
-        except Exception:
-            pass
         print("Error on OAUTH_URL: "+str(auth.status_code))
-        print(json.dumps(auth.json(), indent=4))
+        if err:
+            print(json.dumps(err, indent=4))
+        else:
+            print(auth.text)
         break
 
-    response = auth.json()
+    response = _safe_json(auth)
+    if response is None:
+        print("Error: Expected JSON response after username/password check.")
+        break
     Debug(json.dumps(response,indent=4))
 
     if response["status"] != "OTP_REQUIRED":
@@ -112,12 +202,15 @@ while True:
     url=EnsureHTTPS(response["_links"]["checkOtp"]["href"] + "?action=checkOtp")
     Debug("url="+str(url))
     auth=auth_session.post(url,data=json.dumps({ "otp": otp }))
-    Debug(json.dumps(auth.json(),indent=4))
+    DebugResponse(auth, "Check OTP")
     if auth.status_code != 200:
         print("OTP unsuccessful, invalid status_code: "+str(auth.status_code))
         break
 
-    response=auth.json()
+    response = _safe_json(auth)
+    if response is None:
+        print("Error: Expected JSON response after OTP check.")
+        break
     if response["status"] != "OTP_VERIFIED":
         print("Invalid response status on CheckOTP: "+str(response["status"]))
         break
@@ -125,21 +218,29 @@ while True:
     Debug("OTP succesful, continuing auth")
     url=EnsureHTTPS(response["_links"]["continueAuthentication"]["href"] + "?action=continueAuthentication")
     auth=auth_session.post(url, data="{}")
-    response=auth.json()
-    Debug(json.dumps(response,indent=4))
+    DebugResponse(auth, "Continue authentication")
     if auth.status_code != 200:
         print("Invalid status_code in CheckOTP: "+str(auth.status_code))
         break
+    response = _safe_json(auth)
+    if response is None:
+        print("Error: Expected JSON response on continueAuthentication.")
+        break
+    Debug(json.dumps(response,indent=4))
 
     Debug("checkAuth succesful, getting token")
     auth_session.headers.update({"content-type": "application/x-www-form-urlencoded"})
     body = {"code": response["authorizeResponse"]["code"], "grant_type": "authorization_code"}
     auth = auth_session.post(OAUTH_TOKEN_URL, data=body)
-    response=auth.json()
-    Debug(json.dumps(response,indent=4))
+    DebugResponse(auth, "Get token")
     if auth.status_code != 200:
         print("Invalid status_code on continueAuthentication: "+str(auth.status_code))
         break
+    response = _safe_json(auth)
+    if response is None:
+        print("Error: Expected JSON token response.")
+        break
+    Debug(json.dumps(response,indent=4))
 
     # Credentials were typed in this session (not from ini): ask if user wants to save them
     if not _save_credentials:
@@ -164,4 +265,3 @@ while True:
         config.write(configfile)
     print("token.ini created, restart your Volvo plugin to use the new token.")
     break
-
