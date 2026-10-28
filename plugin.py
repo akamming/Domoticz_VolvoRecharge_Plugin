@@ -873,14 +873,18 @@ def _handle_energy_charging(DeltaPercentageBattery, chargingType):
     IncreaseKWHMeter(vin, USEDKWH, "usedKWH", 0)
 
     # Check if we are charging near home or public charging
+    if DISTANCE2HOME not in Devices[vin].Units:
+        Debug("No Distance2Home value available, skip charged-at-home/public counters")
+        return
+
     try:
         distance2home = float(Devices[vin].Units[DISTANCE2HOME].sValue)
         if distance2home <= HOMECHARGINGRADIUS:
             _handle_home_charging(DeltaPercentageBattery)
         else:
             _handle_public_charging(DeltaPercentageBattery, chargingType)
-    except KeyError:
-        Error("No Distance 2 home device, also not creating/updating athome/public charging kwh counters")
+    except ValueError:
+        Error("Distance2Home is not numeric, skip charged-at-home/public counters")
 
 def _handle_home_charging(DeltaPercentageBattery):
     """Helper: afhandelen van thuis opladen"""
@@ -1038,8 +1042,14 @@ def GetRechargeStatus():
         # Determine EVCC connected status (A-F)
         if chargerConnectionStatus is None:
             Debug("ChargerConnectionStatus is not supported")
+        elif DISTANCE2HOME not in Devices[vin].Units:
+            Debug("No Distance2Home value available, skip EVCC connected status")
         else:
-            distance2home=float(Devices[vin].Units[DISTANCE2HOME].sValue)
+            try:
+                distance2home=float(Devices[vin].Units[DISTANCE2HOME].sValue)
+            except ValueError:
+                Error("Distance2Home is not numeric, skip EVCC connected status")
+                return
             if distance2home>HOMECHARGINGRADIUS:   
                 # If the car is outside the home charging radius, set EVCCConnectedStatus to A
                 Debug("Car is outside home charging radius, setting EVCCConnectedStatus to A")
@@ -1110,6 +1120,24 @@ def getOutSideTemperature(longitude,latitude):
         Error("Openweather call failed")
         Error(error)
 
+def GetDomoticzLocation():
+    location = Settings.get("Location", "")
+    if len(location) == 0:
+        Debug("No location entered in domoticz config")
+        return None
+
+    Debug("Domoticz location is " + str(location))
+    values = location.split(";")
+    if len(values) != 2:
+        Debug("Invalid location entered in domoticz config")
+        return None
+
+    try:
+        return (float(values[0]), float(values[1]))
+    except (TypeError, ValueError):
+        Debug("Invalid location coordinates entered in domoticz config")
+        return None
+
 def GetLocation():
     Debug("GetLocation() called")
     Location = VolvoAPI("https://api.volvocars.com/location/v1/vehicles/" + vin + "/location", "application/json")
@@ -1143,18 +1171,14 @@ def GetLocation():
             getOutSideTemperature(coordinates[0], coordinates[1])
 
         # update distance to car
-        if len(Settings["Location"]) > 0:
-            Debug("Domoticz location is " + Settings["Location"])
-            DomoticzLocation = Settings["Location"].split(";")
-            if len(DomoticzLocation) == 2 and isinstance(coordinates, list) and len(coordinates) >= 2:
-                VolvoLocation = (coordinates[1], coordinates[0])
-                Distance2Home = round(DistanceBetweenCoords(DomoticzLocation, VolvoLocation),3)
-                Debug("Distance to volvo is " + str(Distance2Home))
-                UpdateSensor(vin, DISTANCE2HOME, "Distance2Home", 243, 31, {'Custom': '1;km'}, int(Distance2Home), str(Distance2Home))
-            else:
-                Debug("Invalid location entered in domoticz config or coordinates missing")
+        DomoticzLocation = GetDomoticzLocation()
+        if DomoticzLocation is not None and isinstance(coordinates, list) and len(coordinates) >= 2:
+            VolvoLocation = (coordinates[1], coordinates[0])
+            Distance2Home = round(DistanceBetweenCoords(DomoticzLocation, VolvoLocation),3)
+            Debug("Distance to volvo is " + str(Distance2Home))
+            UpdateSensor(vin, DISTANCE2HOME, "Distance2Home", 243, 31, {'Custom': '1;km'}, int(Distance2Home), str(Distance2Home))
         else:
-            Debug("No location entered in domoticz config")
+            Debug("Skipping distance to home update, location or coordinates missing")
     else:
         Error("GetLocation failed")
 
