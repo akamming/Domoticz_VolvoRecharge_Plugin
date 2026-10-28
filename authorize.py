@@ -192,13 +192,24 @@ def is_callback_url(url):
     )
 
 
-def validate_identity_url(url):
+def normalize_identity_url(url):
     parsed = urlparse(url)
     hostname = (parsed.hostname or "").lower()
-    if parsed.scheme != "https" or not (
+    if not (
         hostname == "volvocars.com" or hostname.endswith(".volvocars.com")
     ):
         raise OAuthError("Unexpected Volvo identity URL: " + url)
+    if parsed.scheme not in ("http", "https"):
+        raise OAuthError("Unexpected Volvo identity URL scheme: " + url)
+    if parsed.scheme == "http":
+        secure_url = "https://" + parsed.netloc + parsed.path
+        if parsed.query:
+            secure_url += "?" + parsed.query
+        if parsed.fragment:
+            secure_url += "#" + parsed.fragment
+        Debug("Upgrading Volvo identity URL to HTTPS: " + secure_url)
+        return secure_url
+    return url
 
 
 def extract_authorization_code(callback_url, expected_state):
@@ -226,7 +237,7 @@ def follow_redirects_to_callback(auth_session, response, max_redirects=10):
         location = urljoin(response.url, location)
         if is_callback_url(location):
             return location
-        validate_identity_url(location)
+        location = normalize_identity_url(location)
         response = auth_session.get(location, timeout=30, allow_redirects=False)
     raise OAuthError("Too many redirects while completing Volvo sign-in")
 
@@ -245,7 +256,7 @@ def start_login(auth_session):
 
 
 def submit_credentials(auth_session, action, username, password):
-    validate_identity_url(action)
+    action = normalize_identity_url(action)
     response = auth_session.post(
         action,
         data={
@@ -266,7 +277,7 @@ def submit_credentials(auth_session, action, username, password):
 
 
 def submit_otp(auth_session, action, otp):
-    validate_identity_url(action)
+    action = normalize_identity_url(action)
     response = auth_session.post(
         action,
         data={"otp": otp, "login": "Verify"},
