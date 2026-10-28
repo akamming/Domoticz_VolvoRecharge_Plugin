@@ -50,13 +50,14 @@ And then there are several energy devices. Since the API does not allow reading 
    - Set API_KEY and token of ABRP (format api_key:token) Token can be obtained from ABRP app (selecting Generic method at "live data" will give you the token). API_Key can bet obtained by contacting ABRP developer (see instructions at this link:  https://documenter.getpostman.com/view/7396339/SWTK5a8w )
    - Set a Google API Key for friendly names in the triplog
    - if in the domoticz settings the Longitude and Lattitude are correctly entered, the plugin will calculate the absolute distance to your car in km
+   - if no Domoticz location is configured, distance-based sensors/logic (Distance2Home, EVCC home/public split, charged-at-home/public counters) are skipped
    - Set openweather token (can be obtained by creating an account on this url https://home.openweathermap.org/users/sign_up )
    - Copy the lua script to your scripts/dzVents/scripts editor for some basic fun with this plugin (notifying on charging status, notifying on open window status, notifying on forgot to lock)
 
 ### 2 Factor Authentication
 The plugin already supports 2FA as 2nd way of authentication. 
 
-For this you will have to run the authorize.py script in the plugin directory (give the command "python authorize.py"). For verbose API debugging (including full request/response details for HTTP 400 errors), use "python authorize.py -d". The script will request your username/password, your vcc key and your One Time Password which will be sent to your email or SMS during the process. This script will create a token.ini file, after which the plugin can be restarted to use the new connection setting.
+For this you will have to run the authorize.py script in the plugin directory (give the command "python authorize.py"). For verbose API debugging (including full request/response details for HTTP 400 errors), use "python authorize.py -d". The script uses Volvo's current Authorization Code + PKCE login flow, then requests your username/password, your vcc key and your One Time Password which will be sent to your email or SMS during the process. This script will create a token.ini file, after which the plugin can be restarted to use the new connection setting.
 
 NOTE: In normal operations this has to be done only once, and after that the connection will remain. However is the token expires and on that moment domoticz is down, it will not renew in time and you have to re-authenticate using the authorize.py script. 
 
