@@ -297,7 +297,7 @@ def CheckRefreshToken():
     global lastloginattempttimestamp
 
     if refresh_token:
-        if True or expirytimestamp-time.time()<60:  #if expires in 60 seconds: refresh
+        if expirytimestamp-time.time()<60:  #if expires in 60 seconds: refresh
             RefreshVOCToken()
         else:
             Debug("Not refreshing token, expires in "+str(expirytimestamp-time.time())+" seconds")
