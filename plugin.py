@@ -239,8 +239,8 @@ def RefreshVOCToken():
     
     try:
         data = urllib.parse.urlencode({
-            'access_token_manager_id': 'JWTh4Yf0b',
             'grant_type': 'refresh_token',
+            'client_id': 'mo2qy9h_10',
             'refresh_token': refresh_token
         }).encode('utf-8')
 
@@ -248,9 +248,9 @@ def RefreshVOCToken():
             "https://volvoid.eu.volvocars.com/as/token.oauth2",
             data=data,
             headers = {
-                'authorization': 'Basic aDRZZjBiOlU4WWtTYlZsNnh3c2c1WVFxWmZyZ1ZtSWFEcGhPc3kxUENhVXNpY1F0bzNUUjVrd2FKc2U0QVpkZ2ZJZmNMeXc=',
                 'content-type': 'application/x-www-form-urlencoded',
-                'user-agent': 'okhttp/4.10.0'
+                'accept': 'application/json',
+                'user-agent': 'vca-android/7.2.0'
             }
         )
 
@@ -297,7 +297,7 @@ def CheckRefreshToken():
     global lastloginattempttimestamp
 
     if refresh_token:
-        if expirytimestamp-time.time()<60:  #if expires in 60 seconds: refresh
+        if True or expirytimestamp-time.time()<60:  #if expires in 60 seconds: refresh
             RefreshVOCToken()
         else:
             Debug("Not refreshing token, expires in "+str(expirytimestamp-time.time())+" seconds")
